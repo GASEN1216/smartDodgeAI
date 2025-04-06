@@ -1,5 +1,6 @@
 [h1]智能躲避 AI (Smart Dodge AI)[/h1]
 
+[h2]中文 (Chinese)[/h2]
 还在为你的弹幕总是轻易命中敌人而感到无趣吗？想让战斗更具挑战性吗？
 
 这个 Mod 赋予了泰拉瑞亚世界中的敌怪和 Boss 智能躲避玩家弹幕的能力！它们会尝试闪避你的攻击，同时保留原有的攻击和移动模式，让战斗更加动态和刺激。
@@ -21,3 +22,26 @@
 
 [b]反馈与建议:[/b]
 欢迎在 Steam Workshop 评论区或 GitHub 仓库提出任何问题或建议！
+
+[h2]English[/h2]
+Tired of your projectiles always hitting enemies too easily? Want more challenging battles?
+
+This Mod gives enemies and bosses in the Terraria world the ability to intelligently dodge player projectiles! They will try to evade your attacks while maintaining their original attack and movement patterns, making combat more dynamic and exciting.
+
+[b]Main Features:[/b]
+*   [b]Smart Dodging:[/b] Most enemies and bosses (except town NPCs) will attempt to dodge player projectiles and non-pure melee weapons.
+*   [b]Preserved Vanilla AI:[/b] The dodging logic is added on top of the vanilla AI, enemies will still attack and move normally.
+*   [b]Highly Configurable:[/b] Through the in-game Mod config menu, you can freely adjust:
+    *   Dodge chance
+    *   Whether to show "MISS" text
+    *   Whether to play dodge sound effects
+    *   Whether to show dodge particle effects
+    *   Whether to enable boss dodging
+    *   Whether to enable normal enemy dodging
+
+[b]Compatibility:[/b]
+*   Designed to be compatible with vanilla and most other Mods.
+*   Does not directly modify vanilla AI, reducing the possibility of conflicts.
+
+[b]Feedback and Suggestions:[/b]
+Feel free to raise any issues or suggestions in the Steam Workshop comments or GitHub repository!
