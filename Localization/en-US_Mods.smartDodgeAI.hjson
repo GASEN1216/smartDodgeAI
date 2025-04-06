@@ -1,0 +1,35 @@
+Configs: {
+	SmartDodgeConfig: {
+		DisplayName: Smart Dodge Config
+
+		MissChance: {
+			Label: Miss Chance
+			Tooltip: Chance for enemies to dodge projectile damage (percentage)
+		}
+
+		ShowMissText: {
+			Label: Show Miss Text
+			Tooltip: Whether to display MISS text when an enemy dodges a projectile
+		}
+
+		EnableMissSound: {
+			Label: Enable Miss Sound
+			Tooltip: Whether to play a sound effect when an enemy dodges a projectile
+		}
+
+		EnableMissParticles: {
+			Label: Enable Miss Particles
+			Tooltip: Whether to show dust particles when an enemy dodges a projectile
+		}
+
+		EnableBossDodge: {
+			Label: Enable Boss Dodge
+			Tooltip: Allow bosses to dodge projectile damage
+		}
+
+		EnableNormalEnemyDodge: {
+			Label: Enable Normal Enemy Dodge
+			Tooltip: Allow normal enemies to dodge projectile damage
+		}
+	}
+}

@@ -1,0 +1,35 @@
+Configs: {
+	SmartDodgeConfig: {
+		DisplayName: 智能闪避 AI 配置
+
+		MissChance: {
+			Label: 闪避几率
+			Tooltip: 敌怪闪避弹幕伤害的概率（百分比）
+		}
+
+		ShowMissText: {
+			Label: 显示闪避文本
+			Tooltip: 当敌怪闪避弹幕时是否显示MISS文本
+		}
+
+		EnableMissSound: {
+			Label: 启用闪避音效
+			Tooltip: 当敌怪闪避弹幕时是否播放音效
+		}
+
+		EnableMissParticles: {
+			Label: 启用闪避粒子
+			Tooltip: 当敌怪闪避弹幕时是否显示粒子效果
+		}
+
+		EnableBossDodge: {
+			Label: 启用Boss闪避
+			Tooltip: 是否允许Boss闪避弹幕伤害
+		}
+
+		EnableNormalEnemyDodge: {
+			Label: 启用普通敌怪闪避
+			Tooltip: 是否允许普通敌怪闪避弹幕伤害
+		}
+	}
+}
