@@ -1,0 +1,23 @@
+Smart Dodge AI v0.2.0
+
+[h2]新增功能 (New Features)[/h2]
+*   现在可以按伤害类型（远程、魔法、召唤、近战）设置独立的闪避率。
+*   现在可以为特定的弹幕类型设置独立的、更高优先级的闪避率。
+
+[h2]Bug 修复 (Bug Fixes)[/h2]
+*   修复了 NPC 闪避召唤物攻击时，会导致召唤物自身消失的问题。
+
+[h2]改进 (Improvements)[/h2]
+*   重构了配置菜单，为不同类型的设置添加了标题进行分类。
+*   为所有配置选项添加了更详细的中文和英文说明，以提高易用性。 
+
+[h2]New Features[/h2]
+* You can now set independent dodge rates by damage type (ranged, magic, summon, melee).
+* You can now set independent, higher priority dodge rates for specific barrage types.
+
+[h2]Bug Fixes[/h2]
+* Fixed an issue where NPCs would cause summons to disappear when dodging their attacks.
+
+[h2]Improvements[/h2]
+* Restructured the configuration menu and added titles to categorize different types of settings.
+* Added more detailed Chinese and English descriptions for all configuration options to improve usability.

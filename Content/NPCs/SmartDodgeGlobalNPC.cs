@@ -90,8 +90,45 @@ namespace smartDodgeAI.Content.NPCs
             var config = ModContent.GetInstance<SmartDodgeConfig>();
             if (config == null) return;
 
+            // --- 闪避率计算 ---
+            int currentMissChance = -1;
+
+            // 1. 检查特定弹幕的覆写设置（最高优先级）
+            var overrideConfig = config.ProjectileOverrides.FirstOrDefault(o => o.Projectile != null && o.Projectile.Type == projectile.type);
+            if (overrideConfig != null)
+            {
+                currentMissChance = overrideConfig.OverrideChance;
+            }
+            else
+            {
+                // 2. 检查伤害类型的覆写设置
+                if (projectile.DamageType == DamageClass.Ranged && config.RangedDodgeChance != -1)
+                {
+                    currentMissChance = config.RangedDodgeChance;
+                }
+                else if (projectile.DamageType == DamageClass.Magic && config.MagicDodgeChance != -1)
+                {
+                    currentMissChance = config.MagicDodgeChance;
+                }
+                else if (projectile.DamageType == DamageClass.Summon && config.SummonDodgeChance != -1)
+                {
+                    currentMissChance = config.SummonDodgeChance;
+                }
+                else if (projectile.DamageType == DamageClass.Melee && config.MeleeDodgeChance != -1)
+                {
+                    currentMissChance = config.MeleeDodgeChance;
+                }
+            }
+
+            // 3. 如果没有任何覆写，则使用全局闪避率
+            if (currentMissChance == -1)
+            {
+                currentMissChance = missChance;
+            }
+            // --- 闪避率计算结束 ---
+
             // 检查随机概率是否触发miss
-            if (Main.rand.Next(100) < missChance)
+            if (currentMissChance > 0 && Main.rand.Next(100) < currentMissChance)
             {
                 // 标记此NPC为闪避状态
                 MissTracker.NPCsMissed[npc.whoAmI] = true;
@@ -107,9 +144,12 @@ namespace smartDodgeAI.Content.NPCs
                 // 不能设置DamageType，它是只读的
                 // modifiers.DamageType = DamageClass.Default; // 重置伤害类型
                 
-                // 终止弹幕（将弹幕销毁）
-                projectile.active = false;
-                projectile.netUpdate = true; // 确保在多人游戏中同步状态
+                // 终止弹幕（将弹幕销毁），但保留仆从
+                if (!projectile.minion)
+                {
+                    projectile.active = false;
+                    projectile.netUpdate = true; // 确保在多人游戏中同步状态
+                }
                 
                 // 如果配置了显示文本，则在弹幕命中位置显示"MISS"
                 if (showMissText && Main.netMode != NetmodeID.Server)

@@ -31,5 +31,55 @@ Configs: {
 			Label: Enable Normal Enemy Dodge
 			Tooltip: Allow normal enemies to dodge projectile damage
 		}
+
+		Headers: {
+			GlobalSettings: Global Settings
+			DamageTypeDodgeChance: Damage Type Dodge Chance
+			ProjectileSpecificDodgeChance: Projectile-Specific Dodge Chance
+		}
+
+		RangedDodgeChance: {
+			Label: Ranged Dodge Chance
+			Tooltip: Dodge chance for Ranged projectiles. Set to -1 to use the global setting. This is overridden by projectile-specific settings.
+		}
+
+		MagicDodgeChance: {
+			Label: Magic Dodge Chance
+			Tooltip: Dodge chance for Magic projectiles. Set to -1 to use the global setting. This is overridden by projectile-specific settings.
+		}
+
+		SummonDodgeChance: {
+			Label: Summon Dodge Chance
+			Tooltip: Dodge chance for Summon projectiles. Set to -1 to use the global setting. This is overridden by projectile-specific settings.
+		}
+
+		MeleeDodgeChance: {
+			Label: Melee Dodge Chance
+			Tooltip: Dodge chance for Melee projectiles. Set to -1 to use the global setting. This is overridden by projectile-specific settings.
+		}
+
+		ProjectileOverrides: {
+			Label: Projectile-Specific Overrides
+			Tooltip: Define dodge chances for specific projectiles. This has the highest priority and overrides both global and damage-type settings.
+		}
+	}
+
+	ProjectileDodgeOverride: {
+		Tooltip: A rule to override dodge chance for one specific projectile type.
+
+		Headers: {
+			ProjectileType: Projectile Type
+			DodgeChance: Dodge Chance
+		}
+
+		Projectile: {
+			Label: Projectile
+			Tooltip: The projectile to set a specific dodge chance for.
+		}
+
+		OverrideChance: {
+			Label: Dodge Chance
+			Tooltip: The dodge chance (0-100%) for this specific projectile.
+		}
 	}
 }

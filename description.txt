@@ -7,5 +7,5 @@ This Mod grants almost all enemies and bosses the ability to dodge player projec
 版本: {ModVersion}
 Version: {ModVersion}
 
-你可以通过 Mod 配置菜单调整躲避几率、显示效果（文本、音效、粒子）以及是否允许 Boss 和普通敌怪进行闪避。
-You can adjust dodge chance, display effects (text, sound, particles) and whether bosses and normal enemies can dodge through the Mod config menu.
+你可以通过 Mod 配置菜单调整全局闪避几率、显示效果，或为特定伤害类型（远程/魔法等）和单个弹幕设置独立的闪避率。
+You can adjust the global dodge chance, display effects, or set individual dodge rates for specific damage types (Ranged/Magic etc.) and individual projectiles through the Mod config menu.

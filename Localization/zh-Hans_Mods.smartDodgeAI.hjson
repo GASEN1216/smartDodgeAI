@@ -31,5 +31,55 @@ Configs: {
 			Label: 启用普通敌怪闪避
 			Tooltip: 是否允许普通敌怪闪避弹幕伤害
 		}
+
+		Headers: {
+			GlobalSettings: 全局设置
+			DamageTypeDodgeChance: 按伤害类型设置闪避率
+			ProjectileSpecificDodgeChance: 按特定弹幕设置闪避率
+		}
+
+		RangedDodgeChance: {
+			Label: 远程闪避率
+			Tooltip: 远程弹幕的闪避率。设置为-1来使用全局设置。此设置会被"特定弹幕设置"所覆盖。
+		}
+
+		MagicDodgeChance: {
+			Label: 魔法闪避率
+			Tooltip: 魔法弹幕的闪避率。设置为-1来使用全局设置。此设置会被"特定弹幕设置"所覆盖。
+		}
+
+		SummonDodgeChance: {
+			Label: 召唤闪避率
+			Tooltip: 召唤弹幕的闪避率。设置为-1来使用全局设置。此设置会被"特定弹幕设置"所覆盖。
+		}
+
+		MeleeDodgeChance: {
+			Label: 近战闪避率
+			Tooltip: 近战弹幕的闪避率。设置为-1来使用全局设置。此设置会被"特定弹幕设置"所覆盖。
+		}
+
+		ProjectileOverrides: {
+			Label: 特定弹幕闪避覆写
+			Tooltip: 为特定的弹幕定义闪避率。此设置拥有最高优先级，会覆写全局和伤害类型的设置。
+		}
+	}
+
+	ProjectileDodgeOverride: {
+		Tooltip: 为一种特定的弹幕类型覆写闪避率规则。
+
+		Headers: {
+			ProjectileType: 弹幕类型
+			DodgeChance: 闪避率
+		}
+
+		Projectile: {
+			Label: 弹幕
+			Tooltip: 需要设置特定闪避率的弹幕。
+		}
+
+		OverrideChance: {
+			Label: 闪避率
+			Tooltip: 为此特定弹幕设置的闪避率 (0-100%)。
+		}
 	}
 }
