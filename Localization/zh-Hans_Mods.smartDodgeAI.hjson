@@ -36,6 +36,7 @@ Configs: {
 			GlobalSettings: 全局设置
 			DamageTypeDodgeChance: 按伤害类型设置闪避率
 			ProjectileSpecificDodgeChance: 按特定弹幕设置闪避率
+			TeleportSettings: 瞬移设置
 		}
 
 		RangedDodgeChance: {
@@ -62,6 +63,16 @@ Configs: {
 			Label: 特定弹幕闪避覆写
 			Tooltip: 为特定的弹幕定义闪避率。此设置拥有最高优先级，会覆写全局和伤害类型的设置。
 		}
+
+		EnableTeleport: {
+			Label: 启用瞬移
+			Tooltip: 敌怪在闪避后是否会瞬移到新位置。
+		}
+
+		TeleportCooldown: {
+			Label: 瞬移冷却时间（秒）
+			Tooltip: NPC 瞬移后的冷却时间，单位为秒。设置为0可禁用。
+		}
 	}
 
 	ProjectileDodgeOverride: {
@@ -83,3 +94,5 @@ Configs: {
 		}
 	}
 }
+
+// Projectiles.ShieldEffect.DisplayName: Shield Effect

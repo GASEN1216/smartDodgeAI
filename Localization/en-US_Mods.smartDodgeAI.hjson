@@ -36,6 +36,7 @@ Configs: {
 			GlobalSettings: Global Settings
 			DamageTypeDodgeChance: Damage Type Dodge Chance
 			ProjectileSpecificDodgeChance: Projectile-Specific Dodge Chance
+			TeleportSettings: Teleport Settings
 		}
 
 		RangedDodgeChance: {
@@ -62,6 +63,16 @@ Configs: {
 			Label: Projectile-Specific Overrides
 			Tooltip: Define dodge chances for specific projectiles. This has the highest priority and overrides both global and damage-type settings.
 		}
+
+		EnableTeleport: {
+			Label: Enable Teleport
+			Tooltip: Whether enemies will teleport to a new position after dodging.
+		}
+
+		TeleportCooldown: {
+			Label: Teleport Cooldown (seconds)
+			Tooltip: The cooldown in seconds after an NPC teleports. Set to 0 to disable.
+		}
 	}
 
 	ProjectileDodgeOverride: {
@@ -83,3 +94,5 @@ Configs: {
 		}
 	}
 }
+
+Projectiles.ShieldEffect.DisplayName: Shield Effect

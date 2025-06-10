@@ -76,6 +76,15 @@ namespace smartDodgeAI.Content.Config
         [SeparatePage]
         public List<ProjectileDodgeOverride> ProjectileOverrides { get; set; } = new List<ProjectileDodgeOverride>();
 
+        [Header("TeleportSettings")]
+        [DefaultValue(true)]
+        public bool EnableTeleport = true;
+
+        [DefaultValue(5)]
+        [Range(0, 60)]
+        [Slider]
+        public int TeleportCooldown = 5;
+
         // OnChanged 似乎不需要了，因为 GlobalNPC 会在需要时读取配置实例
         /*
         public override void OnChanged()

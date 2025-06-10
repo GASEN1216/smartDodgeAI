@@ -9,6 +9,7 @@ using Terraria.Audio;
 using Terraria.Localization;
 using System.Reflection;
 using smartDodgeAI.Content.Config;
+using smartDodgeAI.Content.Utils;
 
 namespace smartDodgeAI.Content.NPCs
 {
@@ -47,6 +48,9 @@ namespace smartDodgeAI.Content.NPCs
         private bool showMissText = true;
         private bool enableMissSound = true;
         private bool enableMissParticles = true;
+
+        // --- 瞬移冷却计时器 ---
+        private double _lastTeleportTime = -1; // 使用-1表示从未瞬移过
 
         // --- 本地AI索引 ---
         private const int DODGE_TIMER = 0;
@@ -193,6 +197,64 @@ namespace smartDodgeAI.Content.NPCs
                             dustVel.X, dustVel.Y, 
                             150, default(Color), 1.2f
                         );
+                    }
+                }
+
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                {
+                    // 确保弹幕所有者是有效的玩家
+                    if (projectile.owner >= 0 && projectile.owner < Main.maxPlayers)
+                    {
+                        Player targetPlayer = Main.player[projectile.owner];
+                        if (targetPlayer.active && !targetPlayer.dead)
+                        {
+                            if (config.EnableTeleport)
+                            {
+                                // --- 冲锋行为检查 ---
+                                // 只有当NPC正在朝玩家移动时，才考虑瞬移
+                                bool isCharging = npc.realLife == -1 &&
+                                                  npc.velocity.LengthSquared() > 0.1f &&
+                                                  Vector2.Dot(npc.velocity, targetPlayer.Center - npc.Center) > 0;
+
+                                if (isCharging)
+                                {
+                                    // --- 瞬移冷却检查 ---
+                                    double cooldownInTicks = config.TeleportCooldown * 60; // 将秒转换为ticks
+                                    if (_lastTeleportTime != -1 && Main.GameUpdateCount - _lastTeleportTime < cooldownInTicks)
+                                    {
+                                        // 冷却中，不瞬移
+                                    }
+                                    else
+                                    {
+                                        Vector2 oldPosition = npc.Center;
+                                        bool teleported = TeleportUtils.AttemptTeleport(npc, targetPlayer);
+
+                                        // 如果瞬移成功，则更新计时器并触发特效
+                                        if (teleported)
+                                        {
+                                            _lastTeleportTime = Main.GameUpdateCount; // 更新冷却计时器
+
+                                            if (config.EnableMissSound)
+                                            {
+                                                SoundEngine.PlaySound(SoundID.Item8, oldPosition);
+                                                SoundEngine.PlaySound(SoundID.Item8, npc.Center);
+                                            }
+                                            if (config.EnableMissParticles)
+                                            {
+                                                for (int d = 0; d < 20; d++)
+                                                {
+                                                    Dust.NewDust(oldPosition, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
+                                                }
+                                                for (int d = 0; d < 20; d++)
+                                                {
+                                                    Dust.NewDust(npc.Center, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
