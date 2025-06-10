@@ -1,6 +1,6 @@
 displayName = Smart Dodge AI
 author = Gasen
-version = 0.2.0
+version = 0.2.0.2
 homepage = https://github.com/GASEN1216/smartDodgeAI
 hideCode = false
 hideResources = false

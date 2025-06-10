@@ -96,3 +96,17 @@ Configs: {
 }
 
 // Projectiles.ShieldEffect.DisplayName: Shield Effect
+
+Items: {
+	TargetingChip: {
+		DisplayName: 定位芯片
+		Tooltip:
+			'''
+			锁定协议启动。弹道预测已上线。
+			警告：强行修正因果律会激怒某些掌握空间技巧的单位...
+			简单说，你打了他们一下，他们会光速回来揍你。
+			'''
+	}
+}
+
+ItemTooltips.TargetingChipBonus: 当前加成: +{0}% 命中率

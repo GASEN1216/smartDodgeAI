@@ -1,8 +1,8 @@
 让敌怪和 Boss 变得更聪明！
 Make enemies and bosses smarter!
 
-这个 Mod 赋予了游戏中几乎所有的敌怪和 Boss 躲避玩家弹幕的能力，同时保留了它们原有的 AI 行为。
-This Mod grants almost all enemies and bosses the ability to dodge player projectiles while preserving their original AI behavior.
+这个 Mod 赋予了游戏中几乎所有的敌怪和 Boss 躲避玩家弹幕的能力，同时保留了它们原有的 AI 行为。现在还包括了智能瞬移功能！
+This Mod grants almost all enemies and bosses the ability to dodge player projectiles while preserving their original AI behavior. Now includes a smart teleportation feature!
 
 版本: {ModVersion}
 Version: {ModVersion}

@@ -4,6 +4,7 @@ using Terraria.ID;
 using Terraria.Audio;
 using Terraria.ModLoader;
 using smartDodgeAI.Content.Config;
+using smartDodgeAI.Content.Players;
 
 namespace smartDodgeAI.Content.Utils
 {
@@ -11,20 +12,17 @@ namespace smartDodgeAI.Content.Utils
     {
         private const int MAX_TELEPORT_ATTEMPTS = 30;
 
-        public static bool AttemptTeleport(NPC npc, Player targetPlayer)
+        public static Vector2? FindTeleportPosition(NPC npc, Player targetPlayer)
         {
             var config = ModContent.GetInstance<SmartDodgeConfig>();
-            if (config == null) return false;
-
-            // 记录原始速度大小
-            float originalSpeed = npc.velocity.Length();
+            if (config == null) return null;
 
             // 计算瞬移半径
             float teleportRadius = Vector2.Distance(npc.Center, targetPlayer.Center);
             // 如果距离太近，则不瞬移
             if (teleportRadius < 100)
             {
-                return false;
+                return null;
             }
 
             // --- 优化瞬移落点 ---
@@ -64,23 +62,56 @@ namespace smartDodgeAI.Content.Utils
 
                 if (validSpot)
                 {
-                    // 执行瞬移
-                    // npc.Teleport(targetPosition, 0); // 原方法会产生声音，替换为手动设置位置
-                    npc.position = targetPosition;
-                    npc.oldPosition = targetPosition; // 防止联机抖动
-                    
-                    // 计算指向玩家的新方向
-                    Vector2 newDirection = Vector2.Normalize(targetPlayer.Center - npc.Center);
-                    
-                    // 应用新方向和旧速度，并增加一个随机的速度加成
-                    npc.velocity = newDirection * (originalSpeed + Main.rand.NextFloat(1f, 3f));
-                    
-                    // 手动同步
-                    NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
-                    return true; // 瞬移成功
+                    return targetPosition; // 找到有效位置，返回它
                 }
             }
-            return false; // 未找到落点
+            return null; // 未找到落点
+        }
+
+        public static void PerformTeleport(NPC npc, Player targetPlayer, Vector2 targetPosition, float originalSpeed)
+        {
+            var config = ModContent.GetInstance<SmartDodgeConfig>();
+            Vector2 oldPosition = npc.Center;
+
+            // 执行瞬移
+            npc.position = targetPosition;
+            npc.oldPosition = targetPosition; // 防止联机抖动
+
+            // 计算指向玩家的新方向
+            Vector2 newDirection = Vector2.Normalize(targetPlayer.Center - npc.Center);
+            
+            // 应用新方向和旧速度，并增加一个随机的速度加成
+            float speedBonus = Main.rand.NextFloat(1f, 3f);
+            var dodgePlayer = targetPlayer.GetModPlayer<DodgePlayer>();
+            if (dodgePlayer.HitRateBonus > 0)
+            {
+                speedBonus *= (1f + dodgePlayer.HitRateBonus);
+            }
+            npc.velocity = newDirection * (originalSpeed + speedBonus);
+            
+            // 手动同步
+            NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
+
+            // --- 瞬移特效 ---
+            if (config != null)
+            {
+                if (config.EnableMissSound)
+                {
+                    SoundEngine.PlaySound(SoundID.Item8, oldPosition);
+                    SoundEngine.PlaySound(SoundID.Item8, npc.Center);
+                }
+                if (config.EnableMissParticles)
+                {
+                    for (int d = 0; d < 20; d++)
+                    {
+                        Dust.NewDust(oldPosition, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
+                    }
+                    for (int d = 0; d < 20; d++)
+                    {
+                        Dust.NewDust(npc.Center, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
+                    }
+                }
+            }
         }
 
         private static bool IsValidGroundSpot(Vector2 position, int width, int height)

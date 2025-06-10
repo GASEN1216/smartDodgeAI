@@ -1,3 +1,43 @@
+Smart Dodge AI v0.2.0.2
+
+[h2]新增功能 (New Features)[/h2]
+*   新增瞬移视觉预警：敌怪瞬移前，目标位置会提前0.5秒出现残影，提供躲避时机。
+*   新增“瞄准芯片”饰品，可以降低敌人的闪避几率，由任意职业徽章合成。
+
+[h2]New Features[/h2]
+*   Added Teleport Visual Cue: Before an enemy teleports, an afterimage appears at the target location 0.5 seconds in advance, providing a window to dodge.
+*   Added "Targeting Chip" accessory, which reduces enemy dodge chance and is crafted from any class emblem.
+
+---
+
+Smart Dodge AI v0.2.0.1
+
+[h2]新增功能 (New Features)[/h2]
+*   新增战术性瞬移功能：敌怪在闪避后，若正在冲向玩家，则会瞬移到玩家身后并发起追击，整个过程可通过配置菜单开关和调整。
+
+[h2]New Features[/h2]
+*   Added tactical teleportation: After dodging, if an enemy is charging, it will teleport behind the player to continue the chase. This feature can be toggled and adjusted in the config menu.
+
+[h2]改进 (Improvements)[/h2]
+*   重构了配置菜单，为不同类型的设置添加了标题进行分类。
+*   为所有配置选项添加了更详细的中文和英文说明，以提高易用性。 
+
+[h2]Bug Fixes[/h2]
+* Fixed an issue where NPCs would cause summons to disappear when dodging their attacks.
+
+[h2]Improvements[/h2]
+* Restructured the configuration menu and added titles to categorize different types of settings.
+* Added more detailed Chinese and English descriptions for all configuration options to improve usability. 
+
+[h2]Bug Fixes[/h2]
+* Fixed an issue where NPCs would cause summons to disappear when dodging their attacks.
+
+[h2]Improvements[/h2]
+* Restructured the configuration menu and added titles to categorize different types of settings.
+* Added more detailed Chinese and English descriptions for all configuration options to improve usability.
+
+---
+
 Smart Dodge AI v0.2.0
 
 [h2]新增功能 (New Features)[/h2]
