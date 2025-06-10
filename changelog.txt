@@ -27,13 +27,6 @@ Smart Dodge AI v0.2.0.1
 
 [h2]Improvements[/h2]
 * Restructured the configuration menu and added titles to categorize different types of settings.
-* Added more detailed Chinese and English descriptions for all configuration options to improve usability. 
-
-[h2]Bug Fixes[/h2]
-* Fixed an issue where NPCs would cause summons to disappear when dodging their attacks.
-
-[h2]Improvements[/h2]
-* Restructured the configuration menu and added titles to categorize different types of settings.
 * Added more detailed Chinese and English descriptions for all configuration options to improve usability.
 
 ---
