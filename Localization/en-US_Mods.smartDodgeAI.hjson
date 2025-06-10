@@ -96,3 +96,17 @@ Configs: {
 }
 
 Projectiles.ShieldEffect.DisplayName: Shield Effect
+
+Items: {
+	TargetingChip: {
+		DisplayName: Targeting Chip
+		Tooltip:
+			'''
+			Lock protocol activated. Ballistic prediction has been launched online.
+			Warning: Forcefully correcting causality can anger some units that master spatial skills ..
+			Simply put, if you hit them, they will come back at lightning speed to beat you up.
+			'''
+	}
+}
+
+ItemTooltips.TargetingChipBonus: Current bonus: +{0}% hit rate

@@ -10,6 +10,9 @@ using Terraria.Localization;
 using System.Reflection;
 using smartDodgeAI.Content.Config;
 using smartDodgeAI.Content.Utils;
+using smartDodgeAI.Content.Players;
+using Microsoft.Xna.Framework.Graphics;
+using Terraria.GameContent;
 
 namespace smartDodgeAI.Content.NPCs
 {
@@ -52,6 +55,11 @@ namespace smartDodgeAI.Content.NPCs
         // --- 瞬移冷却计时器 ---
         private double _lastTeleportTime = -1; // 使用-1表示从未瞬移过
 
+        // --- 瞬移延迟相关字段 ---
+        private int _teleportDelayTimer;
+        private Vector2? _teleportTargetPosition;
+        private int _teleportTargetPlayerId = -1;
+
         // --- 本地AI索引 ---
         private const int DODGE_TIMER = 0;
 
@@ -82,6 +90,64 @@ namespace smartDodgeAI.Content.NPCs
             enableMissParticles = config.EnableMissParticles;
 
             return true;
+        }
+
+        public override void PostAI(NPC npc)
+        {
+            if (_teleportDelayTimer > 0)
+            {
+                _teleportDelayTimer--;
+                if (_teleportDelayTimer == 0 && _teleportTargetPosition.HasValue && _teleportTargetPlayerId != -1)
+                {
+                    // 确保目标玩家仍然有效
+                    if (_teleportTargetPlayerId >= 0 && _teleportTargetPlayerId < Main.maxPlayers)
+                    {
+                        Player targetPlayer = Main.player[_teleportTargetPlayerId];
+                        if (targetPlayer.active && !targetPlayer.dead)
+                        {
+                            float originalSpeed = npc.velocity.Length();
+                            TeleportUtils.PerformTeleport(npc, targetPlayer, _teleportTargetPosition.Value, originalSpeed);
+                        }
+                    }
+                    
+                    // 无论瞬移是否成功，都重置状态
+                    _teleportTargetPosition = null;
+                    _teleportTargetPlayerId = -1;
+                }
+            }
+        }
+
+        public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        {
+            if (_teleportDelayTimer > 0 && _teleportTargetPosition.HasValue)
+            {
+                // 获取NPC的纹理和帧信息
+                Texture2D texture = TextureAssets.Npc[npc.type].Value;
+                Rectangle frame = npc.frame;
+                Vector2 origin = frame.Size() / 2f;
+                float scale = npc.scale;
+
+                // 使用NPC当前的朝向
+                float rotation = npc.rotation;
+                SpriteEffects effects = npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+
+                // 计算绘制位置，将左上角坐标转换为中心坐标
+                Vector2 drawPos = _teleportTargetPosition.Value + origin - screenPos;
+                
+                // --- 绘制效果 ---
+                Color outlineColor = Color.White;
+                Color mainColor = Color.Gray * 0.7f;
+                
+                // 绘制轮廓
+                float offset = 2f;
+                spriteBatch.Draw(texture, drawPos + new Vector2(offset, 0), frame, outlineColor, rotation, origin, scale, effects, 0f);
+                spriteBatch.Draw(texture, drawPos - new Vector2(offset, 0), frame, outlineColor, rotation, origin, scale, effects, 0f);
+                spriteBatch.Draw(texture, drawPos + new Vector2(0, offset), frame, outlineColor, rotation, origin, scale, effects, 0f);
+                spriteBatch.Draw(texture, drawPos - new Vector2(0, offset), frame, outlineColor, rotation, origin, scale, effects, 0f);
+
+                // 绘制主体
+                spriteBatch.Draw(texture, drawPos, frame, mainColor, rotation, origin, scale, effects, 0f);
+            }
         }
 
         public override void ModifyHitByProjectile(NPC npc, Projectile projectile, ref NPC.HitModifiers modifiers)
@@ -131,6 +197,22 @@ namespace smartDodgeAI.Content.NPCs
             }
             // --- 闪避率计算结束 ---
 
+            // --- 命中率饰品加成 ---
+            // 确保弹幕所有者是有效的玩家
+            if (projectile.owner >= 0 && projectile.owner < Main.maxPlayers)
+            {
+                Player owner = Main.player[projectile.owner];
+                if (owner.active && !owner.dead)
+                {
+                    var dodgePlayer = owner.GetModPlayer<DodgePlayer>();
+                    if (dodgePlayer.HitRateBonus > 0)
+                    {
+                        // 降低闪避率
+                        currentMissChance = (int)(currentMissChance * (1f - dodgePlayer.HitRateBonus));
+                    }
+                }
+            }
+            
             // 检查随机概率是否触发miss
             if (currentMissChance > 0 && Main.rand.Next(100) < currentMissChance)
             {
@@ -227,29 +309,15 @@ namespace smartDodgeAI.Content.NPCs
                                     else
                                     {
                                         Vector2 oldPosition = npc.Center;
-                                        bool teleported = TeleportUtils.AttemptTeleport(npc, targetPlayer);
+                                        // 修改为不直接瞬移，而是查找位置并设置延迟
+                                        Vector2? targetPos = TeleportUtils.FindTeleportPosition(npc, targetPlayer);
 
-                                        // 如果瞬移成功，则更新计时器并触发特效
-                                        if (teleported)
+                                        if (targetPos.HasValue)
                                         {
-                                            _lastTeleportTime = Main.GameUpdateCount; // 更新冷却计时器
-
-                                            if (config.EnableMissSound)
-                                            {
-                                                SoundEngine.PlaySound(SoundID.Item8, oldPosition);
-                                                SoundEngine.PlaySound(SoundID.Item8, npc.Center);
-                                            }
-                                            if (config.EnableMissParticles)
-                                            {
-                                                for (int d = 0; d < 20; d++)
-                                                {
-                                                    Dust.NewDust(oldPosition, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
-                                                }
-                                                for (int d = 0; d < 20; d++)
-                                                {
-                                                    Dust.NewDust(npc.Center, 0, 0, DustID.MagicMirror, Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 150, default, 1.5f);
-                                                }
-                                            }
+                                            _teleportTargetPosition = targetPos;
+                                            _teleportDelayTimer = 30; // 0.5秒延迟 (60 FPS)
+                                            _teleportTargetPlayerId = targetPlayer.whoAmI;
+                                            _lastTeleportTime = Main.GameUpdateCount; // 更新瞬移冷却计时器
                                         }
                                     }
                                 }

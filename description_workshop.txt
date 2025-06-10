@@ -7,6 +7,8 @@
 
 [b]主要功能:[/b]
 *   [b]智能闪避:[/b] 大部分敌怪和 Boss (除了城镇 NPC) 会尝试闪避玩家的弹幕和非纯近战武器。
+*   [b]战术性瞬移:[/b] 当敌怪在闪避后，如果它正在冲向你，它会智能地瞬移到你身后继续追击！(此功能可配置)
+*   [b]视觉预警:[/b] 敌怪瞬移前，目标位置会提前0.5秒出现残影，提供躲避时机。
 *   [b]保留原版 AI:[/b] 闪避逻辑附加在原版 AI 之上，敌人仍然会正常攻击和移动。
 *   [b]高度可配置:[/b] 通过游戏内的 Mod 配置菜单，你可以自由调整：
     *   全局闪避几率。
@@ -29,6 +31,8 @@ This Mod gives enemies and bosses in the Terraria world the ability to intellige
 
 [b]Main Features:[/b]
 *   [b]Smart Dodging:[/b] Most enemies and bosses (except town NPCs) will attempt to dodge player projectiles and non-pure melee weapons.
+*   [b]Tactical Teleport:[/b] After dodging, if an enemy is charging at you, it will intelligently teleport behind you to continue the chase! (This feature is configurable)
+*   [b]Visual Cue:[/b] Before an enemy teleports, an afterimage appears at the target location 0.5 seconds in advance, providing a window to dodge.
 *   [b]Preserved Vanilla AI:[/b] The dodging logic is added on top of the vanilla AI, enemies will still attack and move normally.
 *   [b]Highly Configurable:[/b] Through the in-game Mod config menu, you can freely adjust:
     *   Global dodge chance.

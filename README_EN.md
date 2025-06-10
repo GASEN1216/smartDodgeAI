@@ -13,6 +13,8 @@ Are you tired of your projectiles always hitting enemies too easily? This Mod wi
 ## Main Features
 
 - **Smart Dodging**: Most enemies and bosses (except town NPCs) will attempt to dodge player projectiles and non-pure melee weapons
+- **Tactical Teleport**: After dodging, if an enemy is charging at you, it will intelligently teleport behind you to continue the chase! (This feature is configurable)
+- **Visual Cue**: Before an enemy teleports, an afterimage appears at the target location 0.5 seconds in advance, providing a window to dodge.
 - **Preserved Vanilla AI**: The dodging logic is added on top of the vanilla AI, enemies will still attack and move normally
 - **Visual and Sound Feedback**: When enemies successfully dodge, "MISS" text will be displayed, sound effects played, and particle effects generated
 - **Highly Configurable**: Customize all behaviors through the in-game Mod config menu
@@ -40,6 +42,8 @@ The Mod provides various configuration options that can be adjusted through the 
 | Enable Miss Particles | Whether to show dust particles when an enemy dodges a projectile |
 | Enable Boss Dodge | Allow bosses to dodge projectile damage |
 | Enable Normal Enemy Dodge | Allow normal enemies to dodge projectile damage |
+| Enable Teleport | Whether to enable the tactical teleport feature for enemies |
+| Teleport Cooldown | The cooldown in seconds after an enemy teleports |
 
 ## Compatibility
 
