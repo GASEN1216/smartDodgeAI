@@ -107,6 +107,60 @@ Items: {
 			简单说，你打了他们一下，他们会光速回来揍你。
 			'''
 	}
+
+	BlurredTrinket: {
+		DisplayName: 模糊饰品
+		Tooltip:
+			'''
+			一丝现实的震颤跟随着这件饰品。
+			+0.10秒 敌怪瞬移前摇
+			'''
+	}
+
+	GelEcho: {
+		DisplayName: 凝胶回响
+		Tooltip:
+			'''
+			世界似乎先是晃动了一下，然后才猛地弹回原位。
+			+0.10秒 敌怪瞬移前摇
+			'''
+	}
+
+	RetinalRipple: {
+		DisplayName: 视网膜涟漪
+		Tooltip:
+			'''
+			在攻击到来前，你已看见其残影。
+			+0.10秒 敌怪瞬移前摇
+			'''
+	}
+
+	ShadowRemnant: {
+		DisplayName: 暗影残渣
+		Tooltip:
+			'''
+			一片腐化意志的碎片，执着于时间中的某个瞬间。
+			+0.10秒 敌怪瞬移前摇
+			'''
+	}
+
+	HiveMirage: {
+		DisplayName: 蜂巢幻象
+		Tooltip:
+			'''
+			万千蜂翼的嗡鸣，创造出片刻静止的幻象。
+			+0.10秒 敌怪瞬移前摇
+			'''
+	}
+
+	PhantomLocus: {
+		DisplayName: 幻影轨迹
+		Tooltip:
+			'''
+			让你得以驾驭思绪与行动之间的那个瞬间。
+			+0.50秒 敌怪瞬移前摇
+			'''
+	}
 }
 
 ItemTooltips.TargetingChipBonus: 当前加成: +{0}% 命中率

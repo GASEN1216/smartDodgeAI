@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using System;
 using Terraria;
 using Terraria.ID;
 using Terraria.Audio;
@@ -114,6 +115,69 @@ namespace smartDodgeAI.Content.Utils
             }
         }
 
+        public static Vector2? FindDodgeRollPosition(NPC npc, Projectile projectile)
+        {
+            // 翻滚距离 = 弹幕尺寸的两倍 + NPC碰撞盒直径（取最大边），至少 48 像素
+            float dodgeDistance = Math.Max(projectile.width, projectile.height) * 2f + Math.Max(npc.width, npc.height);
+            if (dodgeDistance < 48f)
+                dodgeDistance = 48f;
+
+            // 计算远离弹幕中心的初始方向
+            Vector2 awayDir = (npc.Center - projectile.Center).SafeNormalize(Vector2.UnitX);
+
+            // 如果 awayDir 为零（重叠），则使用随机方向
+            if (awayDir == Vector2.Zero)
+                awayDir = Main.rand.NextVector2CircularEdge(1f, 1f);
+
+            // 计算朝向玩家的方向
+            Vector2 playerDir = Vector2.Zero;
+            if (projectile.owner >= 0 && projectile.owner < Main.maxPlayers)
+            {
+                Player p = Main.player[projectile.owner];
+                if (p.active && !p.dead)
+                {
+                    playerDir = (p.Center - npc.Center).SafeNormalize(Vector2.UnitX);
+                }
+            }
+            // 若获取失败则退回 awayDir 相反方向
+            if (playerDir == Vector2.Zero)
+                playerDir = -awayDir;
+
+            // 在面向玩家的 ±90° 扇形内取 16 个等距方向
+            const int DIR_COUNT = 16;
+            float step = MathHelper.Pi / (DIR_COUNT); // ≈11.25°
+
+            // 生成偏移数组
+            float[] offsets = new float[DIR_COUNT];
+            for (int i = 0; i < DIR_COUNT; i++)
+            {
+                offsets[i] = -MathHelper.PiOver2 + step/2f + step * i;
+            }
+            // 随机打乱顺序
+            for (int i = 0; i < DIR_COUNT; i++)
+            {
+                int swap = Main.rand.Next(DIR_COUNT);
+                (offsets[i], offsets[swap]) = (offsets[swap], offsets[i]);
+            }
+
+            foreach (float offset in offsets)
+            {
+                Vector2 testDir = playerDir.RotatedBy(offset);
+
+                Vector2 targetCenter = npc.Center + testDir * dodgeDistance;
+                Vector2 targetTopLeft = targetCenter - npc.Size / 2f;
+
+                bool validSpot = (npc.noGravity || npc.wet)
+                    ? IsValidAirSpot(targetTopLeft, npc.width, npc.height)
+                    : IsValidGroundSpot(targetTopLeft, npc.width, npc.height);
+
+                if (validSpot)
+                    return targetTopLeft; // 成功找到
+            }
+
+            return null; // 全部尝试失败
+        }
+
         private static bool IsValidGroundSpot(Vector2 position, int width, int height)
         {
             // 检查目标区域是否会卡墙
@@ -147,6 +211,23 @@ namespace smartDodgeAI.Content.Utils
         {
             // 检查目标区域是否在水里且不会卡墙
             return Collision.WetCollision(position, width, height) && !Collision.SolidCollision(position, width, height);
+        }
+
+        public static Vector2? FindLeapApexPosition(NPC npc, Projectile projectile)
+        {
+            // 跳跃高度为敌怪自身碰撞体积+弹幕大小的一到三倍
+            float jumpHeight = (npc.height + Math.Max(projectile.width, projectile.height)) * Main.rand.NextFloat(1.5f, 3f);
+
+            // 目标悬停点在NPC正上方
+            Vector2 apexPosition = npc.Center;
+            apexPosition.Y -= jumpHeight;
+
+            // 检查悬停点是否会卡墙
+            if (Collision.SolidCollision(apexPosition - npc.Size / 2f, npc.width, npc.height))
+            {
+                return null; // 悬停点无效
+            }
+            return apexPosition;
         }
     }
 } 

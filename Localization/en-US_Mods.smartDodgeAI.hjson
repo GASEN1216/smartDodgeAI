@@ -107,6 +107,60 @@ Items: {
 			Simply put, if you hit them, they will come back at lightning speed to beat you up.
 			'''
 	}
+
+	BlurredTrinket: {
+		DisplayName: Blurred Trinket
+		Tooltip:
+			'''
+			A faint tremor in reality follows this trinket.
+			+0.10s enemy teleport wind-up
+			'''
+	}
+
+	GelEcho: {
+		DisplayName: Gel Echo
+		Tooltip:
+			'''
+			The world seems to jiggle for a moment before snapping back.
+			+0.10s enemy teleport wind-up
+			'''
+	}
+
+	RetinalRipple: {
+		DisplayName: Retinal Ripple
+		Tooltip:
+			'''
+			You see the afterimage of an attack just before it lands.
+			+0.10s enemy teleport wind-up
+			'''
+	}
+
+	ShadowRemnant: {
+		DisplayName: Shadow Remnant
+		Tooltip:
+			'''
+			A fragment of a corrupt will, clinging to a moment in time.
+			+0.10s enemy teleport wind-up
+			'''
+	}
+
+	HiveMirage: {
+		DisplayName: Hive Mirage
+		Tooltip:
+			'''
+			The buzzing of a thousand wings creates a fleeting illusion of stillness.
+			+0.10s enemy teleport wind-up
+			'''
+	}
+
+	PhantomLocus: {
+		DisplayName: Phantom Locus
+		Tooltip:
+			'''
+			Grants mastery over the moment between a thought and an action.
+			+0.50s enemy teleport wind-up
+			'''
+	}
 }
 
 ItemTooltips.TargetingChipBonus: Current bonus: +{0}% hit rate

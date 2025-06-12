@@ -13,6 +13,7 @@ using smartDodgeAI.Content.Utils;
 using smartDodgeAI.Content.Players;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameContent;
+using Terraria.Chat;
 
 namespace smartDodgeAI.Content.NPCs
 {
@@ -44,6 +45,9 @@ namespace smartDodgeAI.Content.NPCs
 
     public class SmartDodgeGlobalNPC : GlobalNPC
     {
+        private enum DodgeType { Teleport, Roll, Leap }
+        private enum DodgeLeapPhase { Inactive, Rising, Hovering, Lunging }
+
         // --- 配置相关字段 ---
         private bool enableBossDodge = true;
         private bool enableNormalEnemyDodge = true;
@@ -59,6 +63,19 @@ namespace smartDodgeAI.Content.NPCs
         private int _teleportDelayTimer;
         private Vector2? _teleportTargetPosition;
         private int _teleportTargetPlayerId = -1;
+
+        // --- 翻滚闪避相关字段 ---
+        private int _dodgeRollTimer = 0;
+        private Vector2 _dodgeRollStartPosition = Vector2.Zero;
+        private Vector2 _dodgeRollTargetPosition = Vector2.Zero;
+        private float _initialRotation = 0f;
+        private Vector2 _savedVelocity = Vector2.Zero;
+
+        // --- 跳跃空翻相关字段 ---
+        private DodgeLeapPhase _leapPhase = DodgeLeapPhase.Inactive;
+        private int _leapTimer = 0;
+        private Vector2 _leapStartPosition;
+        private Vector2 _leapApexPosition;
 
         // --- 本地AI索引 ---
         private const int DODGE_TIMER = 0;
@@ -77,6 +94,15 @@ namespace smartDodgeAI.Content.NPCs
 
         public override bool PreAI(NPC npc)
         {
+            // 每帧默认恢复受击状态，避免翻滚结束后仍保持无敌
+            npc.dontTakeDamage = false;
+
+            if (_dodgeRollTimer > 0 || _leapPhase != DodgeLeapPhase.Inactive)
+            {
+                npc.dontTakeDamage = true; // 翻滚或跳跃时无敌
+                return false; // 阻止原版AI运行
+            }
+
             // 读取当前配置
             var config = ModContent.GetInstance<SmartDodgeConfig>();
             if (config == null) return true;
@@ -94,6 +120,98 @@ namespace smartDodgeAI.Content.NPCs
 
         public override void PostAI(NPC npc)
         {
+            if (_dodgeRollTimer > 0)
+            {
+                _dodgeRollTimer--;
+                
+                // 使用插值实现平滑移动
+                float progress = 1f - (_dodgeRollTimer / 15f);
+                npc.position = Vector2.Lerp(_dodgeRollStartPosition, _dodgeRollTargetPosition, progress);
+                
+                // 翻滚动画（旋转）
+                int direction = (npc.Center.X < Main.player[npc.target].Center.X) ? 1 : -1;
+                npc.rotation += MathHelper.ToRadians(360f / 15f) * direction;
+
+                if (_dodgeRollTimer == 0)
+                {
+                    // 翻滚结束
+                    npc.position = _dodgeRollTargetPosition; // 确保最终位置精确
+                    npc.velocity = Vector2.Zero; // 清零速度
+                    if (_savedVelocity != Vector2.Zero)
+                    {
+                        npc.velocity = _savedVelocity; // 恢复原速度
+                        _savedVelocity = Vector2.Zero;
+                    }
+                    npc.rotation = _initialRotation; // 恢复原始角度
+                    npc.dontTakeDamage = false; // 恢复可受击状态
+                }
+                return; // 翻滚时，不执行后续的瞬移延迟逻辑
+            }
+
+            if (_leapPhase != DodgeLeapPhase.Inactive)
+            {
+                _leapTimer--;
+                switch (_leapPhase)
+                {
+                    case DodgeLeapPhase.Rising:
+                        // 线性插值上升到顶点
+                        float progress = 1f - (_leapTimer / 30f); // 30帧上升时间
+                        npc.Center = Vector2.Lerp(_leapStartPosition, _leapApexPosition, progress);
+                        npc.velocity = Vector2.Zero;
+                        npc.rotation += MathHelper.ToRadians(12f) * npc.direction; // 上升时旋转
+
+                        if (_leapTimer <= 0)
+                        {
+                            _leapPhase = DodgeLeapPhase.Hovering;
+                            _leapTimer = Main.rand.Next(6, 91); // 随机悬停0.1-1.5秒
+                            if (Main.netMode != NetmodeID.Server) Main.NewText("触发了跳跃闪避（悬停）", Color.Yellow);
+                        }
+                        break;
+
+                    case DodgeLeapPhase.Hovering:
+                        npc.velocity = Vector2.Zero; // 保持悬停
+                        // 可以添加轻微的上下浮动效果
+                        npc.Center = _leapApexPosition + new Vector2(0, (float)Math.Sin(Main.GameUpdateCount * 0.1f) * 4f);
+
+                        if (_leapTimer <= 0)
+                        {
+                            _leapPhase = DodgeLeapPhase.Lunging;
+                            _leapTimer = 30; // 冲刺0.5秒
+                            Player player = Main.player[npc.target];
+                            if (player.active && !player.dead)
+                            {
+                                Vector2 lungeDir = (player.Center - npc.Center).SafeNormalize(Vector2.Zero);
+                                npc.velocity = lungeDir * 25f; // 高速冲刺
+                                if (Main.netMode != NetmodeID.Server) Main.NewText("触发了跳跃闪避（冲刺）", Color.Orange);
+                            }
+                            else
+                            {
+                                _leapPhase = DodgeLeapPhase.Inactive; // 目标丢失，直接结束
+                            }
+                        }
+                        break;
+                    
+                    case DodgeLeapPhase.Lunging:
+                        // 速度已设定，让NPC自行移动
+                        if (_leapTimer <= 0)
+                        {
+                            _leapPhase = DodgeLeapPhase.Inactive;
+                            npc.rotation = _initialRotation;
+                            if (_savedVelocity != Vector2.Zero)
+                            {
+                                npc.velocity = _savedVelocity;
+                                _savedVelocity = Vector2.Zero;
+                            }
+                            else
+                            {
+                                npc.velocity *= 0.2f; // 减速
+                            }
+                        }
+                        break;
+                }
+                return;
+            }
+
             if (_teleportDelayTimer > 0)
             {
                 _teleportDelayTimer--;
@@ -119,6 +237,7 @@ namespace smartDodgeAI.Content.NPCs
 
         public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
+            if (_dodgeRollTimer > 0 || _leapPhase != DodgeLeapPhase.Inactive) return; // 翻滚或跳跃时，不绘制瞬移幻影
             if (_teleportDelayTimer > 0 && _teleportTargetPosition.HasValue)
             {
                 // 获取NPC的纹理和帧信息
@@ -292,40 +411,127 @@ namespace smartDodgeAI.Content.NPCs
                         {
                             if (config.EnableTeleport)
                             {
-                                // --- 冲锋行为检查 ---
-                                // 只有当NPC正在朝玩家移动时，才考虑瞬移
-                                bool isCharging = npc.realLife == -1 &&
-                                                  npc.velocity.LengthSquared() > 0.1f &&
-                                                  Vector2.Dot(npc.velocity, targetPlayer.Center - npc.Center) > 0;
-
-                                if (isCharging)
+                                // --- 冷却检查 ---
+                                double cooldownInTicks = config.TeleportCooldown * 60; // 将秒转换为ticks
+                                if (_lastTeleportTime != -1 && Main.GameUpdateCount - _lastTeleportTime < cooldownInTicks)
                                 {
-                                    // --- 瞬移冷却检查 ---
-                                    double cooldownInTicks = config.TeleportCooldown * 60; // 将秒转换为ticks
-                                    if (_lastTeleportTime != -1 && Main.GameUpdateCount - _lastTeleportTime < cooldownInTicks)
-                                    {
-                                        // 冷却中，不瞬移
-                                    }
-                                    else
-                                    {
-                                        Vector2 oldPosition = npc.Center;
-                                        // 修改为不直接瞬移，而是查找位置并设置延迟
-                                        Vector2? targetPos = TeleportUtils.FindTeleportPosition(npc, targetPlayer);
+                                    // 冷却中，不执行任何闪避
+                                    return;
+                                }
 
-                                        if (targetPos.HasValue)
-                                        {
-                                            _teleportTargetPosition = targetPos;
-                                            _teleportDelayTimer = 30; // 0.5秒延迟 (60 FPS)
-                                            _teleportTargetPlayerId = targetPlayer.whoAmI;
-                                            _lastTeleportTime = Main.GameUpdateCount; // 更新瞬移冷却计时器
-                                        }
+                                var possibleDodges = new List<DodgeType>();
+                                bool isMultiSegment = npc.realLife != -1 && npc.realLife != npc.whoAmI;
+
+                                // 瞬移始终是备选方案
+                                possibleDodges.Add(DodgeType.Teleport);
+
+                                if (!isMultiSegment)
+                                {
+                                    possibleDodges.Add(DodgeType.Roll);
+                                    // 跳跃只适用于非飞行/游泳的地面单位
+                                    if (!npc.noGravity && !npc.wet)
+                                    {
+                                        possibleDodges.Add(DodgeType.Leap);
                                     }
+                                }
+
+                                // 随机化闪避尝试顺序
+                                var chosenDodge = possibleDodges[Main.rand.Next(possibleDodges.Count)];
+                                
+                                bool success = false;
+                                switch(chosenDodge)
+                                {
+                                    case DodgeType.Roll:
+                                        success = TryStartDodgeRoll(npc, projectile);
+                                        break;
+                                    case DodgeType.Leap:
+                                        success = TryStartLeap(npc, projectile, targetPlayer);
+                                        break;
+                                    case DodgeType.Teleport:
+                                        success = TryStartTeleport(npc, targetPlayer);
+                                        break;
+                                }
+
+                                // 如果选择的闪避方式失败了（比如找不到位置），则退回至瞬移
+                                if (!success && chosenDodge != DodgeType.Teleport)
+                                {
+                                    TryStartTeleport(npc, targetPlayer);
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+
+        private bool TryStartDodgeRoll(NPC npc, Projectile projectile)
+        {
+            Vector2? dodgePos = TeleportUtils.FindDodgeRollPosition(npc, projectile);
+            if (dodgePos.HasValue)
+            {
+                _savedVelocity = npc.velocity;
+                npc.velocity = Vector2.Zero;
+                _dodgeRollStartPosition = npc.position;
+                _dodgeRollTargetPosition = dodgePos.Value;
+                _dodgeRollTimer = 15; // 15帧翻滚时间
+                _initialRotation = npc.rotation;
+                _lastTeleportTime = Main.GameUpdateCount; // 使用相同的冷却计时器
+                if (Main.netMode != NetmodeID.Server) Main.NewText("触发了翻滚闪避", Color.Lime);
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryStartLeap(NPC npc, Projectile projectile, Player player)
+        {
+            Vector2? apexPos = TeleportUtils.FindLeapApexPosition(npc, projectile);
+            if (apexPos.HasValue)
+            {
+                _initialRotation = npc.rotation;
+                _savedVelocity = npc.velocity;
+                npc.velocity = Vector2.Zero;
+
+                _leapStartPosition = npc.Center;
+                _leapApexPosition = apexPos.Value;
+                _leapPhase = DodgeLeapPhase.Rising;
+                _leapTimer = 30; // 30帧到达顶点
+                
+                _lastTeleportTime = Main.GameUpdateCount;
+                if (Main.netMode != NetmodeID.Server) Main.NewText("触发了跳跃闪避（上升）", Color.Yellow);
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryStartTeleport(NPC npc, Player player)
+        {
+            // 始终尝试寻找背后位置，不附加额外方向限制
+            Vector2? targetPos = TeleportUtils.FindTeleportPosition(npc, player);
+            if (targetPos.HasValue)
+            {
+                var dodgePlayer = player.GetModPlayer<DodgePlayer>();
+                _teleportTargetPosition = targetPos;
+                _teleportDelayTimer = Math.Max(1, (int)dodgePlayer.TeleportDelayBonus);
+                _teleportTargetPlayerId = player.whoAmI;
+                _lastTeleportTime = Main.GameUpdateCount;
+
+                if (Main.netMode == NetmodeID.Server)
+                    ChatHelper.BroadcastChatMessage(NetworkText.FromLiteral("触发了瞬移闪避"), Color.Cyan);
+                else
+                    Main.NewText("触发了瞬移闪避", Color.Cyan);
+
+                // 如果延迟被设为0，立即执行瞬移
+                if (_teleportDelayTimer == 1)
+                {
+                    float originalSpeed = npc.velocity.Length();
+                    TeleportUtils.PerformTeleport(npc, player, _teleportTargetPosition.Value, originalSpeed);
+                    _teleportTargetPosition = null;
+                    _teleportTargetPlayerId = -1;
+                    _teleportDelayTimer = 0;
+                }
+                return true;
+            }
+            return false;
         }
 
         // 添加对物品（近战）伤害的处理方法
