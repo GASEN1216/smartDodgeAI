@@ -37,6 +37,8 @@ Configs: {
 			DamageTypeDodgeChance: Damage Type Dodge Chance
 			ProjectileSpecificDodgeChance: Projectile-Specific Dodge Chance
 			TeleportSettings: Teleport Settings
+			DodgeMechanics: Dodge Mechanics Header
+			DodgeCooldowns: Dodge Cooldowns Header
 		}
 
 		RangedDodgeChance: {
@@ -73,6 +75,26 @@ Configs: {
 			Label: Teleport Cooldown (seconds)
 			Tooltip: The cooldown in seconds after an NPC teleports. Set to 0 to disable.
 		}
+
+		EnableLeapDodge: {
+			Tooltip: ""
+			Label: Enable Leap Dodge
+		}
+
+		EnableRollDodge: {
+			Tooltip: ""
+			Label: Enable Roll Dodge
+		}
+
+		DodgeCooldown: {
+			Tooltip: ""
+			Label: Dodge Cooldown
+		}
+
+		EnableFlashStep: {
+			Label: Enable Flash Step
+			Tooltip: ""
+		}
 	}
 
 	ProjectileDodgeOverride: {
@@ -95,7 +117,10 @@ Configs: {
 	}
 }
 
-Projectiles.ShieldEffect.DisplayName: Shield Effect
+Projectiles: {
+	ShieldEffect.DisplayName: Shield Effect
+	InkProjectile.DisplayName: Ink Projectile
+}
 
 Items: {
 	TargetingChip: {
@@ -164,3 +189,10 @@ Items: {
 }
 
 ItemTooltips.TargetingChipBonus: Current bonus: +{0}% hit rate
+
+Buffs: {
+	ShadowConfusion: {
+		DisplayName: Shadow Confusion
+		Description: Your attacks deal 25% less damage after hitting a shadow clone
+	}
+}

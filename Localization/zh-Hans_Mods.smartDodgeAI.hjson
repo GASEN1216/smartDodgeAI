@@ -37,6 +37,8 @@ Configs: {
 			DamageTypeDodgeChance: 按伤害类型设置闪避率
 			ProjectileSpecificDodgeChance: 按特定弹幕设置闪避率
 			TeleportSettings: 瞬移设置
+			// DodgeMechanics: Dodge Mechanics Header
+			// DodgeCooldowns: Dodge Cooldowns Header
 		}
 
 		RangedDodgeChance: {
@@ -73,6 +75,26 @@ Configs: {
 			Label: 瞬移冷却时间（秒）
 			Tooltip: NPC 瞬移后的冷却时间，单位为秒。设置为0可禁用。
 		}
+
+		EnableLeapDodge: {
+			// Tooltip: ""
+			// Label: Enable Leap Dodge
+		}
+
+		EnableRollDodge: {
+			// Tooltip: ""
+			// Label: Enable Roll Dodge
+		}
+
+		DodgeCooldown: {
+			// Tooltip: ""
+			// Label: Dodge Cooldown
+		}
+
+		EnableFlashStep: {
+			// Label: Enable Flash Step
+			// Tooltip: ""
+		}
 	}
 
 	ProjectileDodgeOverride: {
@@ -95,7 +117,10 @@ Configs: {
 	}
 }
 
-// Projectiles.ShieldEffect.DisplayName: Shield Effect
+Projectiles: {
+	// ShieldEffect.DisplayName: Shield Effect
+	// InkProjectile.DisplayName: Ink Projectile
+}
 
 Items: {
 	TargetingChip: {
@@ -164,3 +189,10 @@ Items: {
 }
 
 ItemTooltips.TargetingChipBonus: 当前加成: +{0}% 命中率
+
+Buffs: {
+	ShadowConfusion: {
+		DisplayName: 暗影迷惑
+		Description: 击中暗影分身后，你的攻击伤害降低25%
+	}
+}
