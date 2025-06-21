@@ -28,7 +28,8 @@ namespace smartDodgeAI.Content.Systems
         {
             if (Main.LocalPlayer.TryGetModPlayer<DodgePlayer>(out var dodgePlayer) && dodgePlayer.HasInkEffect && _inkSplashTexture != null && _inkSplashTexture.IsLoaded)
             {
-                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.UIScaleMatrix);
+                // 注意：移除了 spriteBatch.Begin() 调用，因为在 PostDrawInterface 中传入的 spriteBatch 已处于绘制状态
+                // 再次调用 Begin() 而不先调用 End() 会导致 InvalidOperationException
 
                 Texture2D texture = _inkSplashTexture.Value;
                 float alpha = 0f;
@@ -74,7 +75,7 @@ namespace smartDodgeAI.Content.Systems
                     0f
                 );
 
-                spriteBatch.End();
+                // 注意：移除了 spriteBatch.End() 调用，因为不应结束我们没有开始的绘制过程
             }
         }
     }

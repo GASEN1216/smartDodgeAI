@@ -98,6 +98,7 @@ namespace smartDodgeAI.Content.NPCs
         private bool _isTimeDilationActive = false;
         private bool _handlingExtraAI = false; // 防止AI递归调用
         private Vector2 _originalVelocity = Vector2.Zero; // 存储原始速度
+        private Vector2 _timeDilationPosition = Vector2.Zero; // 存储时间膨胀开始时的位置
 
         // --- 影分身相关字段 ---
         private bool _hasShadowClones = false;
@@ -158,6 +159,11 @@ namespace smartDodgeAI.Content.NPCs
         {
             var config = ModContent.GetInstance<SmartDodgeConfig>();
             if (config == null) return false;
+            
+            // 排除动物类型的NPC
+            if (entity.CountsAsACritter || entity.friendly)
+                return false;
+                
             if (entity.boss)
                 return lateInstantiation && config.EnableBossDodge;
             else
@@ -208,7 +214,7 @@ namespace smartDodgeAI.Content.NPCs
             // 新增：缩小状态下允许AI运行，但保持无敌
             if (_isShrinking)
             {
-                npc.dontTakeDamage = true;
+                // npc.dontTakeDamage = true; // 根据新需求，移除无敌
             }
 
             // 读取当前配置
@@ -242,60 +248,16 @@ namespace smartDodgeAI.Content.NPCs
                 _damageReductionTimer--;
             }
 
-            // --- 缩小闪避逻辑 ---
+            // --- 闪避逻辑 ---
             if (_isShrinking)
             {
                 _shrinkDodgeTimer--;
                 if (_shrinkDodgeTimer <= 0)
                 {
-                    Vector2 currentCenter = npc.Center;
-                    float originalScale = _originalScale;
-
-                    // 准备恢复原状
-                    npc.scale = originalScale;
-                    npc.Center = currentCenter;
-
-                    // 检查恢复后是否会卡住
-                    if (Collision.SolidCollision(npc.position, npc.width, npc.height))
-                    {
-                        // 卡住了，寻找附近安全点
-                        Vector2? safeSpot = FindNearbySafeSpot(npc, originalScale);
-                        if (safeSpot.HasValue)
-                        {
-                            npc.Center = safeSpot.Value;
-                            if (Main.netMode != NetmodeID.Server) Main.NewText("Shrink: Restored size at a new location.", Color.Yellow);
-                            
-                            // 产生粒子效果
-                            if (enableMissParticles)
-                            {
-                                for (int i = 0; i < 20; i++)
-                                    Dust.NewDust(npc.position, npc.width, npc.height, DustID.Smoke, Main.rand.NextFloat(-2, 2), Main.rand.NextFloat(-2, 2));
-                            }
-                        }
-                        else
-                        {
-                            // 找不到安全点，在原地强行恢复
-                            npc.Center = currentCenter;
-                            if (Main.netMode != NetmodeID.Server) Main.NewText("Shrink: Could not find a safe spot, forcing restore.", Color.Red);
-                        }
-                    }
-                    
-                    // 恢复音效
-                    if (enableMissSound)
-                    {
-                        SoundEngine.PlaySound(SoundID.Item61, npc.Center); // "Grow" sound
-                    }
-
-                    // 重置状态
-                    _isShrinking = false;
-                    _originalScale = 1f;
-                    npc.dontTakeDamage = false;
+                    RestoreShrinkState(npc);
                 }
-                return; // 缩小期间，不执行其他闪避逻辑
             }
-
-            // --- 闪避逻辑 ---
-            if (_timeRewindTimer > 0)
+            else if (_timeRewindTimer > 0)
             {
                 _timeRewindTimer--;
                 
@@ -334,75 +296,18 @@ namespace smartDodgeAI.Content.NPCs
                 }
                 return;
             }
-
-            if (_isTimeDilationActive && _timeDilationTimer > 0)
+            else if (_isTimeDilationActive && _timeDilationTimer > 0)
             {
                 // 减少计时器
                 _timeDilationTimer--;
                 
-                // 寻找距离最近的玩家（或有效目标）
-                Player targetPlayer = null;
-                if (npc.target >= 0 && npc.target < Main.maxPlayers && Main.player[npc.target].active && !Main.player[npc.target].dead)
-                {
-                    targetPlayer = Main.player[npc.target];
-                }
-                else
-                {
-                    // 如果当前目标无效，寻找最近的玩家
-                    float closestDistance = float.MaxValue;
-                    for (int i = 0; i < Main.maxPlayers; i++)
-                    {
-                        Player player = Main.player[i];
-                        if (player.active && !player.dead)
-                        {
-                            float distance = Vector2.Distance(npc.Center, player.Center);
-                            if (distance < closestDistance)
-                            {
-                                closestDistance = distance;
-                                targetPlayer = player;
-                            }
-                        }
-                    }
-                }
-                
-                // 只有在有有效目标玩家时才进行方向判断
-                bool isMovingTowardsPlayer = false;
-                if (targetPlayer != null)
-                {
-                    // 计算指向玩家的方向向量
-                    Vector2 directionToPlayer = (targetPlayer.Center - npc.Center).SafeNormalize(Vector2.Zero);
-                    
-                    // 计算当前速度与指向玩家方向的点积
-                    // 点积为正表示方向相似（小于90度角）
-                    float dotProduct = Vector2.Dot(npc.velocity.SafeNormalize(Vector2.Zero), directionToPlayer);
-                    
-                    // 如果速度方向与指向玩家的方向夹角小于60度，则认为是朝向玩家
-                    isMovingTowardsPlayer = dotProduct > 0.5f; // cos(60°) ≈ 0.5
-                }
+                // 移除位置固定和速度清零，允许AI正常运行
+                // npc.position = _timeDilationPosition;
+                // npc.velocity = Vector2.Zero;
                 
                 // 加速NPC自身的帧动画播放(双速)
                 npc.frameCounter += 1;
                 
-                // 只有在朝向玩家移动时才加速速度
-                if (isMovingTowardsPlayer)
-                {
-                    // 加速NPC移动速度（使用原始速度的2倍）
-                    npc.velocity = _originalVelocity * 2f;
-                }
-                else
-                {
-                    // 不朝向玩家时使用原始速度
-                    npc.velocity = _originalVelocity;
-                }
-                
-                // 执行额外的AI更新以实现2倍速度
-                if (isMovingTowardsPlayer && !_handlingExtraAI)
-                {
-                    _handlingExtraAI = true;
-                    npc.AI(); // 额外调用一次AI
-                    _handlingExtraAI = false;
-                }
-
                 // 处理周围弹幕减速
                 for (int i = 0; i < Main.maxProjectiles; i++)
                 {
@@ -455,19 +360,71 @@ namespace smartDodgeAI.Content.NPCs
                     // 时间膨胀效果结束
                     _isTimeDilationActive = false;
                     
-                    // 恢复所有缓存弹幕的速度
+                    // 将受影响弹幕反弹回它们的所有者，并使其能够伤害玩家
                     foreach (var pair in _affectedProjectileCache)
                     {
-                        if (Main.projectile[pair.Key].active)
+                        int projIndex = pair.Key;
+                        if (Main.projectile[projIndex].active)
                         {
-                            Main.projectile[pair.Key].velocity = pair.Value;
+                            Projectile projectile = Main.projectile[projIndex];
+                            
+                            // 保存原始伤害值用于计算
+                            int originalDamage = projectile.damage;
+                            
+                            // 修改弹幕属性，使其能够伤害玩家而不是NPC
+                            projectile.hostile = true; // 对玩家造成伤害
+                            projectile.friendly = false; // 不对NPC造成伤害
+                            projectile.damage = (int)(originalDamage * 0.1f); // 伤害削减90%
+                            
+                            if (projectile.owner >= 0 && projectile.owner < Main.maxPlayers)
+                            {
+                                Player owner = Main.player[projectile.owner];
+                                if (owner.active && !owner.dead)
+                                {
+                                    // 计算朝向玩家的方向
+                                    Vector2 reverseDirection = (owner.Center - projectile.Center).SafeNormalize(Vector2.Zero);
+                                    // 使用原始速度大小，但方向朝向玩家
+                                    float originalSpeed = pair.Value.Length();
+                                    projectile.velocity = reverseDirection * originalSpeed;
+                                    
+                                    // 在弹幕周围生成反弹特效
+                                    if (enableMissParticles)
+                                    {
+                                        for (int i = 0; i < 5; i++)
+                                        {
+                                            Dust dust = Dust.NewDustDirect(
+                                                projectile.position, 
+                                                projectile.width, 
+                                                projectile.height, 
+                                                DustID.PinkTorch,
+                                                reverseDirection.X * 2, 
+                                                reverseDirection.Y * 2, 
+                                                100, 
+                                                default, 
+                                                1.2f
+                                            );
+                                            dust.noGravity = true;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // 如果所有者无效，随机方向反弹
+                                    projectile.velocity = pair.Value.RotatedByRandom(MathHelper.Pi) * -1f;
+                                }
+                            }
+                            else
+                            {
+                                // 如果没有有效所有者，随机方向反弹
+                                projectile.velocity = pair.Value.RotatedByRandom(MathHelper.Pi) * -1f;
+                            }
                         }
                     }
                     _affectedProjectileCache.Clear();
                     
-                    // 恢复NPC的帧动画速度和移动速度
+                    // 恢复NPC的帧动画速度，不再恢复速度（让AI继续正常运行）
                     npc.frameCounter = _originalFrameCounter;
-                    npc.velocity = _originalVelocity;
+                    // npc.velocity = _originalVelocity; // 移除恢复速度的代码
                     
                     // 根据配置生成结束特效
                     if (enableMissParticles)
@@ -893,7 +850,8 @@ namespace smartDodgeAI.Content.NPCs
                 if (_invisibilityTimer <= 0)
                 {
                     _isInvisible = false;
-                    npc.alpha = 0; // 确保恢复可见
+                    // 恢复原始缩放比例
+                    npc.scale = _originalScale;
                     
                     // 可选：添加重新出现的粒子效果
                     if (enableMissParticles)
@@ -995,21 +953,21 @@ namespace smartDodgeAI.Content.NPCs
                 
                 return; // 墨水喷射期间，不执行其他逻辑
             }
+
+            base.PostAI(npc);
         }
 
         public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
-            if (_isInvisible)
-            {
-                return false; // 隐身时不绘制NPC
-            }
+            // 不再完全隐藏隐身的NPC，而是让它们以1%的尺寸显示
+            // 隐身NPC现在通过缩放实现，所以总是返回true允许绘制
             return true;
         }
 
         public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
             // 隐藏或隐身阶段不绘制任何额外效果
-            if (_burrowPhase == DodgeBurrowPhase.Hidden || _isInvisible)
+            if (_burrowPhase == DodgeBurrowPhase.Hidden)
             {
                 return;
             }
@@ -1025,7 +983,7 @@ namespace smartDodgeAI.Content.NPCs
                 Vector2 drawCenter = npc.Center - screenPos;
                 
                 // 确定影响圈的颜色
-                float alpha = (float)_timeDilationTimer / 120f; // 根据剩余时间淡出
+                float alpha = (float)_timeDilationTimer / 60f; // 根据剩余时间淡出
                 Color ringColor = new Color(180, 120, 255, 50) * (0.3f + 0.1f * (float)Math.Sin(Main.GameUpdateCount * 0.1f)) * alpha;
                 
                 // 绘制时间膨胀圈
@@ -1129,7 +1087,7 @@ namespace smartDodgeAI.Content.NPCs
             }
         
             // 原有的瞬移目标位置绘制代码
-            if (_dodgeRollTimer > 0 || _leapPhase != DodgeLeapPhase.Inactive || _isInvisible) return; // 翻滚、跳跃或隐身时，不绘制瞬移幻影
+            if (_dodgeRollTimer > 0 || _leapPhase != DodgeLeapPhase.Inactive) return; // 翻滚或跳跃时，不绘制瞬移幻影
             if (_teleportDelayTimer > 0 && _teleportTargetPosition.HasValue)
             {
                 // 获取NPC的纹理和帧信息
@@ -1311,6 +1269,12 @@ namespace smartDodgeAI.Content.NPCs
 
         public override void ModifyHitByProjectile(NPC npc, Projectile projectile, ref NPC.HitModifiers modifiers)
         {
+            // 如果NPC是影分身，则不执行闪避逻辑
+            if (ShadowCloneManager.IsClone(npc.whoAmI))
+            {
+                return;
+            }
+            
             // 时间回溯后的伤害减免
             if (_damageReductionTimer > 0)
             {
@@ -1336,7 +1300,8 @@ namespace smartDodgeAI.Content.NPCs
                     // 无敌期结束，受击则解除隐身
                     _isInvisible = false;
                     _invisibilityTimer = 0;
-                    npc.alpha = 0; // 立即恢复可见
+                    // 恢复原始缩放比例
+                    npc.scale = _originalScale;
 
                     if (Main.netMode != NetmodeID.Server)
                     {
@@ -1509,26 +1474,37 @@ namespace smartDodgeAI.Content.NPCs
 
                                 if (!isMultiSegment)
                                 {
-                                    possibleDodges.Add(DodgeType.Roll);
-                                    possibleDodges.Add(DodgeType.Flash); // 添加闪现步选项
-                                    possibleDodges.Add(DodgeType.TimeDilation); // 添加时间膨胀选项
-                                    possibleDodges.Add(DodgeType.ShadowClone); // 添加影分身选项
-                                    possibleDodges.Add(DodgeType.BurrowOrInvisibility); // 添加飞天遁地选项
-                                    possibleDodges.Add(DodgeType.Invisibility); // 添加隐身选项
-                                    possibleDodges.Add(DodgeType.MagneticWave); // 添加磁力波选项
-                                    possibleDodges.Add(DodgeType.InkSplash); // 添加墨水喷射选项
-                                    possibleDodges.Add(DodgeType.Shrink); // 添加缩小闪避选项
+                                    // 对所有NPC（包括Boss）都可用的非干扰性闪避
+                                    possibleDodges.Add(DodgeType.ShadowClone);
+                                    possibleDodges.Add(DodgeType.Invisibility);
+                                    possibleDodges.Add(DodgeType.InkSplash);
                                     
-                                    // 时间回溯需要有足够的历史记录
-                                    if (_history.Count >= 45)
+                                    // 缩小闪避仅适用于非Boss单位
+                                    if (!_isShrinking && !npc.boss)
                                     {
-                                        possibleDodges.Add(DodgeType.TimeRewind);
+                                        possibleDodges.Add(DodgeType.Shrink);
                                     }
 
-                                    // 跳跃只适用于非飞行/游泳的地面单位
-                                    if (!npc.noGravity && !npc.wet)
+                                    // 会干扰AI的闪避方式，仅限于非Boss单位
+                                    if (!npc.boss)
                                     {
-                                        possibleDodges.Add(DodgeType.Leap);
+                                        possibleDodges.Add(DodgeType.Roll);
+                                        possibleDodges.Add(DodgeType.Flash);
+                                        possibleDodges.Add(DodgeType.TimeDilation);
+                                        possibleDodges.Add(DodgeType.BurrowOrInvisibility);
+                                        possibleDodges.Add(DodgeType.MagneticWave);
+                                        
+                                        // 时间回溯需要有足够的历史记录
+                                        if (_history.Count >= 45)
+                                        {
+                                            possibleDodges.Add(DodgeType.TimeRewind);
+                                        }
+
+                                        // 跳跃只适用于非飞行/游泳的地面单位
+                                        if (!npc.noGravity && !npc.wet)
+                                        {
+                                            possibleDodges.Add(DodgeType.Leap);
+                                        }
                                     }
                                 }
 
@@ -1820,12 +1796,13 @@ namespace smartDodgeAI.Content.NPCs
         {
             // 计算时间膨胀半径：敌怪碰撞体积的1.0倍
             _timeDilationRadius = Math.Max(npc.width, npc.height) * 1.0f;
-            _timeDilationTimer = 120; // 持续2秒(120帧)
+            _timeDilationTimer = 60; // 持续1秒(60帧)
             _affectedProjectileCache.Clear(); // 清空受影响弹幕缓存
             _isTimeDilationActive = true;
             _originalFrameSpeed = (float)npc.frameCounter; // 保存原始帧速度
             _originalFrameCounter = (int)npc.frameCounter;
             _originalVelocity = npc.velocity; // 保存原始速度
+            _timeDilationPosition = npc.position; // 保存敌怪当前位置
             
             // 使用全局冷却计时器
             _lastTeleportTime = Main.GameUpdateCount;
@@ -1845,18 +1822,47 @@ namespace smartDodgeAI.Content.NPCs
             // 创建两个幻影影分身
             for (int i = 0; i < 2; i++)
             {
-                // 随机位置偏移
-                Vector2 spawnPos = npc.Center + Main.rand.NextVector2Circular(100f, 100f);
+                // 直接使用原始敌怪的位置作为分身生成点
+                Vector2 spawnPos = npc.Center;
                 
-                // 检查位置是否有效（不会卡墙）
+                // 检查位置是否有效（理论上应该总是有效，但为了安全保留检查）
                 if (!Collision.SolidCollision(spawnPos - new Vector2(npc.width / 2, npc.height / 2), npc.width, npc.height))
                 {
-                    // 创建分身NPC
+                    // 如果是Boss，使用替代类型以避免触发Boss出现提示
+                    int cloneType;
+                    bool isBossType = npc.boss;
+                    
+                    if (isBossType)
+                    {
+                        // 根据Boss的类型选择适合的替代NPC
+                        if (npc.width > 100 || npc.height > 100)
+                        {
+                            // 大体型Boss使用幻影,这是一个强大但不是boss的敌怪
+                            cloneType = NPCID.Mimic;
+                        }
+                        else if (!npc.noGravity)
+                        {
+                            // 地面Boss使用僵尸，打到不会有声音
+                            cloneType = NPCID.Zombie;
+                        }
+                        else
+                        {
+                            // 飞行Boss使用地狱蝙蝠
+                            cloneType = NPCID.GiantFlyingFox;
+                        }
+                    }
+                    else
+                    {
+                        // 非Boss使用原始类型
+                        cloneType = npc.type;
+                    }
+                    
+                    // 创建分身NPC，初始位置设置在预计算的生成点
                     int cloneIndex = NPC.NewNPC(
                         npc.GetSource_FromAI(),
                         (int)spawnPos.X,
                         (int)spawnPos.Y,
-                        npc.type,
+                        cloneType, // 使用原敌怪类型，继承其AI
                         npc.whoAmI
                     );
                     
@@ -1864,23 +1870,47 @@ namespace smartDodgeAI.Content.NPCs
                     {
                         NPC clone = Main.npc[cloneIndex];
                         
-                        // 设置分身属性
-                        clone.life = 1;
-                        clone.lifeMax = 1;
-                        clone.dontTakeDamage = false;
-                        clone.defense = 0;
-                        clone.damage = (int)(npc.damage * 0.5f); // 伤害为原版一半
-                        clone.target = npc.target;
+                        // 设置分身属性，保留原敌怪的大多数特征
+                        clone.life = (int)(npc.life * 0.5f); // 降低生命值，使其更容易被击杀
+                        clone.lifeMax = (int)(npc.lifeMax * 0.5f);
+                        clone.dontTakeDamage = false; // 确保可以受到伤害
+                        clone.defense = (int)(npc.defense * 0.5f); // 降低防御
+                        clone.damage = (int)(npc.damage * 0.25f); // 降低伤害，只有原始NPC的四分之一
+                        clone.target = npc.target; // 继承目标
                         clone.direction = npc.direction;
-                        clone.velocity = npc.velocity;
+                        clone.velocity = Vector2.Zero; // 初始保持静止
+                        clone.knockBackResist = Math.Min(1f, npc.knockBackResist * 2); // 增加击退效果
+                        
+                        // 保持与原敌怪相同的碰撞箱尺寸，确保AI能正常工作
+                        // 但是如果是Boss，需要标记为非Boss以避免UI显示
+                        if (clone.boss)
+                        {
+                            clone.boss = false;
+                        }
+                        
+                        // 确保NPC立即进行网络同步
                         clone.netUpdate = true;
+                        clone.netUpdate2 = true; // 强制立即同步
+                        
                         clone.value = 0; // 设置价值为0，阻止掉落物品
                         clone.npcSlots = 0; // 设置NPC槽位为0
                         
                         // 设置分身特殊属性
                         var cloneGlobal = clone.GetGlobalNPC<ShadowCloneGlobalNPC>();
                         cloneGlobal.IsShadowClone = true;
-                        cloneGlobal.MaxLifeTime = Main.rand.Next(30, 61); // 30-60帧随机存在时间
+                        cloneGlobal.OriginalType = npc.type; // 始终存储原始NPC类型，确保正确绘制
+                        
+                        // 设置一个固定的视觉缩放比例，70-80%
+                        float visualScaleRatio = 0.7f;
+                        
+                        cloneGlobal.VisualScale = visualScaleRatio; // 保存在GlobalNPC中供绘制使用
+                        
+                        // 一般来说，分身的生命周期较短，60-120帧左右
+                        cloneGlobal.MaxLifeTime = Main.rand.Next(60, 121); 
+                        
+                        // 确保正确设置位置，以防止NPC被错误定位
+                        // 由于我们更改了宽高，需要重新调整位置确保中心点不变
+                        clone.position = spawnPos - new Vector2(clone.width / 2, clone.height / 2);
                         
                         // 注册分身
                         ShadowCloneManager.RegisterClone(clone.whoAmI, npc.whoAmI);
@@ -2050,6 +2080,12 @@ namespace smartDodgeAI.Content.NPCs
         // 添加对物品（近战）伤害的处理方法
         public override void ModifyHitByItem(NPC npc, Player player, Item item, ref NPC.HitModifiers modifiers)
         {
+            // 如果NPC是影分身，则不执行闪避逻辑
+            if (ShadowCloneManager.IsClone(npc.whoAmI))
+            {
+                return;
+            }
+            
             // 时间回溯后的伤害减免
             if (_damageReductionTimer > 0)
             {
@@ -2075,7 +2111,8 @@ namespace smartDodgeAI.Content.NPCs
                     // 无敌期结束，受击则解除隐身
                     _isInvisible = false;
                     _invisibilityTimer = 0;
-                    npc.alpha = 0; // 立即恢复可见
+                    // 恢复原始缩放比例
+                    npc.scale = _originalScale;
 
                     if (Main.netMode != NetmodeID.Server)
                     {
@@ -2235,6 +2272,12 @@ namespace smartDodgeAI.Content.NPCs
             
             // 进入时有1秒无敌
             _invisibilityInvincibilityTimer = 60;
+            
+            // 保存原始缩放比例
+            _originalScale = npc.scale;
+            
+            // 缩小到原始大小的1%
+            npc.scale *= 0.01f;
 
             _lastTeleportTime = Main.GameUpdateCount; // 使用全局冷却计时器
 
@@ -2382,7 +2425,7 @@ namespace smartDodgeAI.Content.NPCs
             _isShrinking = true;
             _shrinkDodgeTimer = 120; // 持续2秒
             _originalScale = npc.scale;
-            npc.scale *= 0.2f; // 缩小80%
+            npc.scale *= 0.5f; // 缩小50%
 
             _lastTeleportTime = Main.GameUpdateCount; // 使用全局冷却
 
@@ -2431,5 +2474,53 @@ namespace smartDodgeAI.Content.NPCs
             npc.scale = originalScale;
             return null;
         }
+
+        private void RestoreShrinkState(NPC npc)
+        {
+            Vector2 currentCenter = npc.Center;
+            float originalScale = _originalScale;
+
+            // 准备恢复原状
+            npc.scale = originalScale;
+            npc.Center = currentCenter;
+
+            // 检查恢复后是否会卡住
+            if (Collision.SolidCollision(npc.position, npc.width, npc.height))
+            {
+                // 卡住了，寻找附近安全点
+                Vector2? safeSpot = FindNearbySafeSpot(npc, originalScale);
+                if (safeSpot.HasValue)
+                {
+                    npc.Center = safeSpot.Value;
+                    if (Main.netMode != NetmodeID.Server) Main.NewText("Shrink: Restored size at a new location.", Color.Yellow);
+
+                    // 产生粒子效果
+                    if (enableMissParticles)
+                    {
+                        for (int i = 0; i < 20; i++)
+                            Dust.NewDust(npc.position, npc.width, npc.height, DustID.Smoke, Main.rand.NextFloat(-2, 2), Main.rand.NextFloat(-2, 2));
+                    }
+                }
+                else
+                {
+                    // 找不到安全点，在原地强行恢复
+                    npc.Center = currentCenter;
+                    if (Main.netMode != NetmodeID.Server) Main.NewText("Shrink: Could not find a safe spot, forcing restore.", Color.Red);
+                }
+            }
+
+            // 恢复音效
+            if (enableMissSound)
+            {
+                SoundEngine.PlaySound(SoundID.Item61, npc.Center); // "Grow" sound
+            }
+
+            // 重置状态
+            _isShrinking = false;
+            _originalScale = 1f;
+            npc.dontTakeDamage = false;
+        }
+
+
     }
 } 
