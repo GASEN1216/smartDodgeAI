@@ -240,14 +240,38 @@ namespace smartDodgeAI.Content.NPCs
                     );
                 }
                 
-                // 播放音效
-                Terraria.Audio.SoundEngine.PlaySound(SoundID.NPCDeath6, npc.Center);
+                // 根据NPC类型选择适当的死亡音效
+                if (npc.type == NPCID.Mimic)
+                {
+                    // 宝箱怪使用NPCDeath6音效
+                    Terraria.Audio.SoundEngine.PlaySound(SoundID.NPCDeath6, npc.Center);
+                }
+                else if (npc.type == NPCID.GiantFlyingFox)
+                {
+                    // 地狱蝙蝠使用NPCDeath4音效
+                    Terraria.Audio.SoundEngine.PlaySound(SoundID.NPCDeath4, npc.Center);
+                }
+                else
+                {
+                    // 默认使用原始的NPCDeath6音效
+                    Terraria.Audio.SoundEngine.PlaySound(SoundID.NPCDeath1, npc.Center);
+                }
                 
                 // 返回 false 来阻止原版的死亡逻辑，包括掉落物品
                 return false;
             }
             
             return base.CheckDead(npc);
+        }
+        
+        // 添加ModifyTypeName方法，修复鼠标悬停时显示的名称
+        public override void ModifyTypeName(NPC npc, ref string typeName)
+        {
+            if (IsShadowClone && OriginalType != -1)
+            {
+                // 使用原始NPC类型的名称，而不是替代NPC的名称
+                typeName = Lang.GetNPCNameValue(OriginalType);
+            }
         }
         
         public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
@@ -257,6 +281,17 @@ namespace smartDodgeAI.Content.NPCs
             {
                 // 清空所有掉落规则
                 npcLoot.RemoveWhere(rule => true);
+            }
+        }
+        
+        // 添加HitEffect方法处理分身被击中时的音效
+        public override void HitEffect(NPC npc, NPC.HitInfo hit)
+        {
+            if (IsShadowClone)
+            {
+                // 所有影分身被击中时都使用僵尸音效
+                Terraria.Audio.SoundEngine.PlaySound(SoundID.NPCHit1, npc.Center);
+                // 可以根据需要添加更多NPC类型的音效处理
             }
         }
     }

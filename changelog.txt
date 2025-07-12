@@ -1,3 +1,25 @@
+Smart Dodge AI v0.2.1.0
+
+[h2]新增功能 (New Features)[/h2]
+*   新增墨水防护饰品系统：包含5个基础饰品和1个高级饰品，可以有效减少敌人墨水喷射次数。
+*   新增愚人节彩蛋功能：骷髅专用模式，仅在4月1日可用，包含Megalovania音乐效果。
+*   新增墨水喷射闪避机制：敌人可以通过喷射墨水弹幕来闪避攻击。
+
+[h2]New Features[/h2]
+*   Added Ink Protection Accessory System: Includes 5 basic accessories and 1 advanced accessory that effectively reduce enemy ink splash count.
+*   Added April Fools Easter Egg: Skeleton-only mode available only on April 1st, includes Megalovania music effects.
+*   Added Ink Splash Dodge Mechanism: Enemies can dodge attacks by spraying ink projectiles.
+
+[h2]改进 (Improvements)[/h2]
+*   更新了README文档中的饰品描述，使其更加清晰易懂。
+*   优化了墨水喷射效果的视觉效果和音效。
+
+[h2]Improvements[/h2]
+*   Updated accessory descriptions in README documentation to be more clear and understandable.
+*   Optimized visual effects and sound effects for ink splash mechanics.
+
+---
+
 Smart Dodge AI v0.2.0.2
 
 [h2]新增功能 (New Features)[/h2]

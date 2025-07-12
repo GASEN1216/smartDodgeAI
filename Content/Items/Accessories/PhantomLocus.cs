@@ -20,8 +20,13 @@ namespace smartDodgeAI.Content.Items.Accessories
 
         public override void UpdateAccessory(Player player, bool hideVisual)
         {
-            // 30 ticks = 0.5 seconds at 60 FPS
-            player.GetModPlayer<DodgePlayer>().TeleportDelayBonus += 30;
+            var modPlayer = player.GetModPlayer<DodgePlayer>();
+            modPlayer.ForceInkSplashTo1 = true;
+            player.statDefense += 1;
+            player.statLifeMax2 += 20;
+            player.GetCritChance(DamageClass.Generic) += 2;
+            player.moveSpeed += 0.05f;
+            player.statManaMax2 += 20;
         }
 
         public override void AddRecipes()

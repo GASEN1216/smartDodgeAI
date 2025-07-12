@@ -21,11 +21,15 @@ namespace smartDodgeAI.Content.Players
         // 用于调试的状态标记
         private bool _wasInkEffectActive = false;
 
+        public int InkSplashReduction;
+        public bool ForceInkSplashTo1;
         public override void ResetEffects()
         {
             // Reset the bonus each frame
             HitRateBonus = 0f;
             TeleportDelayBonus = 0f;
+            InkSplashReduction = 0;
+            ForceInkSplashTo1 = false;
         }
         
         public override void PostUpdate()

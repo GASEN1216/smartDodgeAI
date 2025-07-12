@@ -36,9 +36,10 @@ Configs: {
 			GlobalSettings: Global Settings
 			DamageTypeDodgeChance: Damage Type Dodge Chance
 			ProjectileSpecificDodgeChance: Projectile-Specific Dodge Chance
-			TeleportSettings: Teleport Settings
+			DodgeBehavior: Dodge Behavior Settings
 			DodgeMechanics: Dodge Mechanics Header
 			DodgeCooldowns: Dodge Cooldowns Header
+			AprilFoolsSpecial: April Fools Special Header
 		}
 
 		RangedDodgeChance: {
@@ -67,13 +68,13 @@ Configs: {
 		}
 
 		EnableTeleport: {
-			Label: Enable Teleport
-			Tooltip: Whether enemies will teleport to a new position after dodging.
+			Label: Enable Post-Dodge Actions
+			Tooltip: Whether enemies will perform additional actions after dodging.
 		}
 
 		TeleportCooldown: {
-			Label: Teleport Cooldown (seconds)
-			Tooltip: The cooldown in seconds after an NPC teleports. Set to 0 to disable.
+			Label: Post-Dodge Action Cooldown (seconds)
+			Tooltip: The cooldown in seconds after an NPC performs a post-dodge action. Set to 0 to disable.
 		}
 
 		EnableLeapDodge: {
@@ -94,6 +95,11 @@ Configs: {
 		EnableFlashStep: {
 			Label: Enable Flash Step
 			Tooltip: ""
+		}
+
+		EnableSkeletonOnlyDodge: {
+			Label: Skeleton-Only Dodge Mode
+			Tooltip: Enable dodge functionality only for skeleton-type NPCs (only available on April 1st)
 		}
 	}
 
@@ -138,7 +144,8 @@ Items: {
 		Tooltip:
 			'''
 			A faint tremor in reality follows this trinket.
-			+0.10s enemy teleport wind-up
+			Reduces enemy ink splashes by 2
+			+1 defense
 			'''
 	}
 
@@ -147,7 +154,8 @@ Items: {
 		Tooltip:
 			'''
 			The world seems to jiggle for a moment before snapping back.
-			+0.10s enemy teleport wind-up
+			Reduces enemy ink splashes by 2
+			+20 max life
 			'''
 	}
 
@@ -156,7 +164,8 @@ Items: {
 		Tooltip:
 			'''
 			You see the afterimage of an attack just before it lands.
-			+0.10s enemy teleport wind-up
+			Reduces enemy ink splashes by 2
+			+2% crit chance
 			'''
 	}
 
@@ -165,7 +174,8 @@ Items: {
 		Tooltip:
 			'''
 			A fragment of a corrupt will, clinging to a moment in time.
-			+0.10s enemy teleport wind-up
+			Reduces enemy ink splashes by 2
+			+5% movement speed
 			'''
 	}
 
@@ -174,7 +184,8 @@ Items: {
 		Tooltip:
 			'''
 			The buzzing of a thousand wings creates a fleeting illusion of stillness.
-			+0.10s enemy teleport wind-up
+			Reduces enemy ink splashes by 2
+			+20 max mana
 			'''
 	}
 
@@ -183,7 +194,8 @@ Items: {
 		Tooltip:
 			'''
 			Grants mastery over the moment between a thought and an action.
-			+0.50s enemy teleport wind-up
+			Reduces enemy ink splashes to 1
+			+1 defense, +20 max life, +2% crit chance, +5% movement speed, +20 max mana
 			'''
 	}
 }

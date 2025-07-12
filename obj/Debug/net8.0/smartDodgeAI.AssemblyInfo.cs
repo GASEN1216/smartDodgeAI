@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("smartDodgeAI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3776b38642de21fbc745a398ba4a626d1ef56231")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+10674ab94c896f8a89ec7b148695ad65d1297a5e")]
 [assembly: System.Reflection.AssemblyProductAttribute("smartDodgeAI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("smartDodgeAI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

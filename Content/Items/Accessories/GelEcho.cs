@@ -16,8 +16,8 @@ namespace smartDodgeAI.Content.Items.Accessories
 
         public override void UpdateAccessory(Player player, bool hideVisual)
         {
-            // 6 ticks = 0.1 seconds at 60 FPS
-            player.GetModPlayer<DodgePlayer>().TeleportDelayBonus += 6;
+            player.GetModPlayer<DodgePlayer>().InkSplashReduction += 2;
+            player.statLifeMax2 += 20;
         }
     }
 } 

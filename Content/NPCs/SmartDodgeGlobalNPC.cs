@@ -11,6 +11,7 @@ using System.Reflection;
 using smartDodgeAI.Content.Config;
 using smartDodgeAI.Content.Utils;
 using smartDodgeAI.Content.Players;
+using smartDodgeAI.Content.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameContent;
 using Terraria.Chat;
@@ -96,7 +97,6 @@ namespace smartDodgeAI.Content.NPCs
         private float _originalFrameSpeed = 0f;
         private int _originalFrameCounter = 0;
         private bool _isTimeDilationActive = false;
-        private bool _handlingExtraAI = false; // 防止AI递归调用
         private Vector2 _originalVelocity = Vector2.Zero; // 存储原始速度
         private Vector2 _timeDilationPosition = Vector2.Zero; // 存储时间膨胀开始时的位置
 
@@ -163,6 +163,13 @@ namespace smartDodgeAI.Content.NPCs
             // 排除动物类型的NPC
             if (entity.CountsAsACritter || entity.friendly)
                 return false;
+
+            // 愚人节彩蛋：骷髅专用模式
+            if (config.EnableSkeletonOnlyDodge && (SmartDodgeConfig.IsAprilFoolsDay() || AprilFoolsTestSystem.IsTestMode))
+            {
+                // 在骷髅专用模式下，只对骷髅类型NPC应用闪避
+                return lateInstantiation && SkeletonUtils.IsSkeleton(entity);
+            }
                 
             if (entity.boss)
                 return lateInstantiation && config.EnableBossDodge;
@@ -871,7 +878,16 @@ namespace smartDodgeAI.Content.NPCs
                 _inkSplashTimer--;
                 
                 // 检查是否应该喷射墨水
-                if (_inkSplashTimer % _inkSplashInterval == 0 && _inkSplashCount < 10)
+                int maxInkSplash = 10;
+                var modPlayer = Main.player[Main.myPlayer].GetModPlayer<DodgePlayer>();
+                if (modPlayer != null)
+                {
+                    if (modPlayer.ForceInkSplashTo1)
+                        maxInkSplash = 1;
+                    else
+                        maxInkSplash = Math.Max(1, 10 - modPlayer.InkSplashReduction);
+                }
+                if (_inkSplashTimer % _inkSplashInterval == 0 && _inkSplashCount < maxInkSplash)
                 {
                     // 确保目标玩家有效
                     if (_inkSplashTargetPlayerId >= 0 && _inkSplashTargetPlayerId < Main.maxPlayers)
@@ -1319,7 +1335,7 @@ namespace smartDodgeAI.Content.NPCs
             }
 
             // 检查是否应用闪避逻辑
-            bool canApply = (npc.boss && enableBossDodge) || (!npc.boss && !npc.townNPC && enableNormalEnemyDodge);
+            bool canApply = (IsConsideredBoss(npc) && enableBossDodge) || (!IsConsideredBoss(npc) && !npc.townNPC && enableNormalEnemyDodge);
             if (!canApply) return;
 
             // 获取配置实例
@@ -1469,42 +1485,45 @@ namespace smartDodgeAI.Content.NPCs
                                 var possibleDodges = new List<DodgeType>();
                                 bool isMultiSegment = npc.realLife != -1 && npc.realLife != npc.whoAmI;
 
-                                // 瞬移始终是备选方案
-                                possibleDodges.Add(DodgeType.Teleport);
-
                                 if (!isMultiSegment)
                                 {
+                                    // 瞬移始终是备选方案（但不适用于多节肢体敌怪）
+                                    // possibleDodges.Add(DodgeType.Teleport); // 注释掉：会造成位移
+                                    
                                     // 对所有NPC（包括Boss）都可用的非干扰性闪避
                                     possibleDodges.Add(DodgeType.ShadowClone);
-                                    possibleDodges.Add(DodgeType.Invisibility);
                                     possibleDodges.Add(DodgeType.InkSplash);
                                     
-                                    // 缩小闪避仅适用于非Boss单位
-                                    if (!_isShrinking && !npc.boss)
+                                    // 缩小闪避和隐身闪避仅适用于非Boss单位
+                                    if (!IsConsideredBoss(npc)) 
                                     {
-                                        possibleDodges.Add(DodgeType.Shrink);
+                                        // if (!_isShrinking) // 注释掉：缩小闪避
+                                        // {
+                                        //     possibleDodges.Add(DodgeType.Shrink);
+                                        // }
+                                        // possibleDodges.Add(DodgeType.Invisibility); // 注释掉：隐身闪避
                                     }
 
                                     // 会干扰AI的闪避方式，仅限于非Boss单位
-                                    if (!npc.boss)
+                                    if (!IsConsideredBoss(npc))
                                     {
-                                        possibleDodges.Add(DodgeType.Roll);
-                                        possibleDodges.Add(DodgeType.Flash);
-                                        possibleDodges.Add(DodgeType.TimeDilation);
-                                        possibleDodges.Add(DodgeType.BurrowOrInvisibility);
-                                        possibleDodges.Add(DodgeType.MagneticWave);
+                                        // possibleDodges.Add(DodgeType.Roll); // 注释掉：会造成位移且影响AI
+                                        // possibleDodges.Add(DodgeType.Flash); // 注释掉：会造成位移且影响AI
+                                        possibleDodges.Add(DodgeType.TimeDilation); // 保留：不影响AI
+                                        // possibleDodges.Add(DodgeType.BurrowOrInvisibility); // 注释掉：会造成位移且影响AI
+                                        // possibleDodges.Add(DodgeType.MagneticWave); // 注释掉：会影响AI
                                         
                                         // 时间回溯需要有足够的历史记录
-                                        if (_history.Count >= 45)
-                                        {
-                                            possibleDodges.Add(DodgeType.TimeRewind);
-                                        }
+                                        // if (_history.Count >= 45) // 注释掉：会造成位移且影响AI
+                                        // {
+                                        //     possibleDodges.Add(DodgeType.TimeRewind);
+                                        // }
 
                                         // 跳跃只适用于非飞行/游泳的地面单位
-                                        if (!npc.noGravity && !npc.wet)
-                                        {
-                                            possibleDodges.Add(DodgeType.Leap);
-                                        }
+                                        // if (!npc.noGravity && !npc.wet) // 注释掉：会造成位移且影响AI
+                                        // {
+                                        //     possibleDodges.Add(DodgeType.Leap);
+                                        // }
                                     }
                                 }
 
@@ -1514,41 +1533,14 @@ namespace smartDodgeAI.Content.NPCs
                                 bool success = false;
                                 switch(chosenDodge)
                                 {
-                                    case DodgeType.Roll:
-                                        success = TryStartDodgeRoll(npc, projectile);
-                                        break;
-                                    case DodgeType.Leap:
-                                        success = TryStartLeap(npc, projectile, targetPlayer);
-                                        break;
-                                    case DodgeType.Flash:
-                                        success = TryStartFlash(npc, projectile);
-                                        break;
                                     case DodgeType.TimeDilation:
                                         success = TryStartTimeDilation(npc, projectile);
                                         break;
                                     case DodgeType.ShadowClone:
                                         success = TryStartShadowClones(npc, projectile);
                                         break;
-                                    case DodgeType.BurrowOrInvisibility:
-                                        success = TryStartBurrowOrInvisibility(npc, targetPlayer);
-                                        break;
-                                    case DodgeType.Invisibility:
-                                        success = TryStartInvisibility(npc);
-                                        break;
-                                    case DodgeType.MagneticWave:
-                                        success = TryStartMagneticWave(npc, projectile);
-                                        break;
                                     case DodgeType.InkSplash:
                                         success = TryStartInkSplash(npc, targetPlayer);
-                                        break;
-                                    case DodgeType.TimeRewind:
-                                        success = TryStartTimeRewind(npc);
-                                        break;
-                                    case DodgeType.Teleport:
-                                        success = TryStartTeleport(npc, targetPlayer);
-                                        break;
-                                    case DodgeType.Shrink:
-                                        success = TryStartShrink(npc);
                                         break;
                                 }
 
@@ -1605,33 +1597,34 @@ namespace smartDodgeAI.Content.NPCs
 
         private bool TryStartTeleport(NPC npc, Player player)
         {
-            // 始终尝试寻找背后位置，不附加额外方向限制
-            Vector2? targetPos = TeleportUtils.FindTeleportPosition(npc, player);
-            if (targetPos.HasValue)
-            {
-                var dodgePlayer = player.GetModPlayer<DodgePlayer>();
-                _teleportTargetPosition = targetPos;
-                _teleportDelayTimer = Math.Max(1, (int)dodgePlayer.TeleportDelayBonus);
-                _teleportTargetPlayerId = player.whoAmI;
-                _lastTeleportTime = Main.GameUpdateCount;
-
-                if (Main.netMode == NetmodeID.Server)
-                    ChatHelper.BroadcastChatMessage(NetworkText.FromLiteral("触发了瞬移闪避"), Color.Cyan);
-                else
-                    Main.NewText("触发了瞬移闪避", Color.Cyan);
-
-                // 如果延迟被设为0，立即执行瞬移
-                if (_teleportDelayTimer == 1)
-                {
-                    float originalSpeed = npc.velocity.Length();
-                    TeleportUtils.PerformTeleport(npc, player, _teleportTargetPosition.Value, originalSpeed);
-                    _teleportTargetPosition = null;
-                    _teleportTargetPlayerId = -1;
-                    _teleportDelayTimer = 0;
-                }
-                return true;
-            }
+            // 已禁用瞬移闪避
             return false;
+            // 以下为原有实现：
+            // bool isMultiSegment = npc.realLife != -1 && npc.realLife != npc.whoAmI;
+            // if (isMultiSegment) return false;
+            // Vector2? targetPos = TeleportUtils.FindTeleportPosition(npc, player);
+            // if (targetPos.HasValue)
+            // {
+            //     var dodgePlayer = player.GetModPlayer<DodgePlayer>();
+            //     _teleportTargetPosition = targetPos;
+            //     _teleportDelayTimer = Math.Max(1, (int)dodgePlayer.TeleportDelayBonus);
+            //     _teleportTargetPlayerId = player.whoAmI;
+            //     _lastTeleportTime = Main.GameUpdateCount;
+            //     if (Main.netMode == NetmodeID.Server)
+            //         ChatHelper.BroadcastChatMessage(NetworkText.FromLiteral("触发了瞬移闪避"), Color.Cyan);
+            //     else
+            //         Main.NewText("触发了瞬移闪避", Color.Cyan);
+            //     if (_teleportDelayTimer == 1)
+            //     {
+            //         float originalSpeed = npc.velocity.Length();
+            //         TeleportUtils.PerformTeleport(npc, player, _teleportTargetPosition.Value, originalSpeed);
+            //         _teleportTargetPosition = null;
+            //         _teleportTargetPlayerId = -1;
+            //         _teleportDelayTimer = 0;
+            //     }
+            //     return true;
+            // }
+            // return false;
         }
 
         private bool TryStartFlash(NPC npc, Projectile projectile)
@@ -1834,13 +1827,7 @@ namespace smartDodgeAI.Content.NPCs
                     
                     if (isBossType)
                     {
-                        // 根据Boss的类型选择适合的替代NPC
-                        if (npc.width > 100 || npc.height > 100)
-                        {
-                            // 大体型Boss使用幻影,这是一个强大但不是boss的敌怪
-                            cloneType = NPCID.Mimic;
-                        }
-                        else if (!npc.noGravity)
+                        if (!npc.noGravity)
                         {
                             // 地面Boss使用僵尸，打到不会有声音
                             cloneType = NPCID.Zombie;
@@ -2139,7 +2126,7 @@ namespace smartDodgeAI.Content.NPCs
             if (isPurelyMelee) return;
             
             // 检查是否应用闪避逻辑
-            bool canApply = (npc.boss && enableBossDodge) || (!npc.boss && !npc.townNPC && enableNormalEnemyDodge);
+            bool canApply = (IsConsideredBoss(npc) && enableBossDodge) || (!IsConsideredBoss(npc) && !npc.townNPC && enableNormalEnemyDodge);
             if (!canApply) return;
 
             // 获取配置实例
@@ -2261,6 +2248,11 @@ namespace smartDodgeAI.Content.NPCs
 
         private bool TryStartInvisibility(NPC npc)
         {
+            // 如果是Boss或多节肢体敌怪，直接返回false不允许使用隐身闪避
+            if (IsConsideredBoss(npc)) return false;
+            bool isMultiSegment = npc.realLife != -1 && npc.realLife != npc.whoAmI;
+            if (isMultiSegment) return false;
+            
             var config = ModContent.GetInstance<SmartDodgeConfig>();
             if (config == null) return false;
 
@@ -2422,6 +2414,11 @@ namespace smartDodgeAI.Content.NPCs
 
         private bool TryStartShrink(NPC npc)
         {
+            // 如果是Boss或多节肢体敌怪，直接返回false不允许使用缩小闪避
+            if (IsConsideredBoss(npc)) return false;
+            bool isMultiSegment = npc.realLife != -1 && npc.realLife != npc.whoAmI;
+            if (isMultiSegment) return false;
+            
             _isShrinking = true;
             _shrinkDodgeTimer = 120; // 持续2秒
             _originalScale = npc.scale;
@@ -2521,6 +2518,10 @@ namespace smartDodgeAI.Content.NPCs
             npc.dontTakeDamage = false;
         }
 
+        private bool IsConsideredBoss(NPC npc)
+        {
+            return npc.boss || NPCID.Sets.ShouldBeCountedAsBoss[npc.type];
+        }
 
     }
 } 
